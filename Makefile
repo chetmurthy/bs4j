@@ -1,7 +1,7 @@
 
 OCAMLFIND=ocamlfind
 NOT_OCAMLFIND=not-ocamlfind
-PACKAGES=fmt,camlp5.extprint,camlp5.extend,camlp5.pprintf,pcre,yaml,pa_ppx.deriving_plugins.std
+PACKAGES=fmt,camlp5.extprint,camlp5.extend,camlp5.pprintf,pcre,yaml,pa_ppx.deriving_plugins.std,pa_ppx.testutils
 
 all: yamltest
 

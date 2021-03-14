@@ -1,8 +1,23 @@
 open OUnit2
 open OUnitTest
 open Yaml
+open Pa_ppx_testutils
 
 let warning s = Fmt.(pf stderr "%s\n%!" s)
+
+let matches ~pattern text =
+  match Str.search_forward (Str.regexp pattern) text 0 with
+    _ -> true
+  | exception Not_found -> false
+
+let assert_raises_exn_pattern pattern f =
+  Testutil.assert_raises_exn_pred
+    (function
+        Failure msg when matches ~pattern msg -> true
+      | Invalid_argument msg when matches ~pattern msg -> true
+      | _ -> false
+    )
+    f
 
 type value =
   [ `A of value list
@@ -143,6 +158,91 @@ time: 20:03:47
 player: Sammy Sosa
 action: grand slam
 ...|})
+      )
+  ; "2.9" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`O (
+  [("hr", `A ([`String ("Mark McGwire"); `String ("Sammy Sosa")]));
+    ("rbi", `A ([`String ("Sammy Sosa"); `String ("Ken Griffey")]))]
+  )))
+        (of_string {|---
+hr: # 1998 hr ranking
+  - Mark McGwire
+  - Sammy Sosa
+rbi:
+  # 1998 rbi ranking
+  - Sammy Sosa
+  - Ken Griffey|})
+      )
+  ; "2.10" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "Anchors are not supported when serialising to JSON"
+        (fun () -> of_string_exn {|---
+hr:
+  - Mark McGwire
+  # Following node labeled SS
+  - &SS Sammy Sosa
+rbi:
+  - *SS # Subsequent occurrence
+  - Ken Griffey|})
+      )
+  ; "2.11" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "only string keys are supported"
+        (fun () -> of_string_exn {|? - Detroit Tigers
+  - Chicago cubs
+:
+  - 2001-07-23
+
+? [ New York Yankees,
+    Atlanta Braves ]
+: [ 2001-07-02, 2001-08-12,
+    2001-08-14 ]|})
+      )
+  ; "prototype" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "prototype" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "prototype" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "prototype" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "prototype" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "prototype" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "prototype" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "prototype" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "prototype" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
       )
 
   ]
