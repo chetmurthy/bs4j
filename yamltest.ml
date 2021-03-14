@@ -199,25 +199,56 @@ rbi:
 : [ 2001-07-02, 2001-08-12,
     2001-08-14 ]|})
       )
-  ; "prototype" >:: (fun ctxt ->
+  ; "2.12" >:: (fun ctxt ->
       assert_equal ~printer
-          (Ok(`Null))
-        (of_string {||})
+        (Ok (`A (
+            [`O ([("item", `String ("Super Hoop")); ("quantity", `Float (1.))]);
+             `O ([("item", `String ("Basketball")); ("quantity", `Float (4.))]);
+             `O ([("item", `String ("Big Shoes")); ("quantity", `Float (1.))])]
+          )))
+        (of_string {|---
+# Products purchased
+- item    : Super Hoop
+  quantity: 1
+- item    : Basketball
+  quantity: 4
+- item    : Big Shoes
+  quantity: 1
+|})
       )
-  ; "prototype" >:: (fun ctxt ->
+  ; "2.13" >:: (fun ctxt ->
       assert_equal ~printer
-          (Ok(`Null))
-        (of_string {||})
+          (Ok(`String ("\\//||\\/||\n\
+                        // ||  ||__")))
+        (of_string {|# ASCII Art
+--- |
+  \//||\/||
+  // ||  ||__|})
       )
-  ; "prototype" >:: (fun ctxt ->
+  ; "2.14" >:: (fun ctxt ->
       assert_equal ~printer
-          (Ok(`Null))
-        (of_string {||})
+          (Ok(`String ("Mark McGwire's year was crippled by a knee injury.")))
+        (of_string {|--- >
+  Mark McGwire's
+  year was crippled
+  by a knee injury.|})
       )
-  ; "prototype" >:: (fun ctxt ->
+  ; "2.15" >:: (fun ctxt ->
       assert_equal ~printer
-          (Ok(`Null))
-        (of_string {||})
+          (Ok(`String (
+  "Sammy Sosa completed another fine season with great stats.\n\n\
+  \  63 Home Runs\n\
+  \  0.288 Batting Average\n\n\
+   What a year!"
+  )))
+        (of_string {|>
+ Sammy Sosa completed another
+ fine season with great stats.
+
+   63 Home Runs
+   0.288 Batting Average
+
+ What a year!|})
       )
   ; "prototype" >:: (fun ctxt ->
       assert_equal ~printer
