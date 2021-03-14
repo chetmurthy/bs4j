@@ -1,0 +1,6 @@
+*.cm*
+*.o
+yamltest
+*.opt
+yamllexer.ml
+_build
