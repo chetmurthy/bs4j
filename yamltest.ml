@@ -495,6 +495,83 @@ Stack:
       foo = bar
 |})
       )
+  ; "5.3" >:: (fun ctxt ->
+      assert_equal ~printer
+        (Ok(`O (
+             [("sequence", `A ([`String ("one"); `String ("two")]));
+              ("mapping", `O ([("sky", `String ("blue")); ("sea", `String ("green"))]))
+             ]
+           )))
+        (of_string {|sequence:
+  - one
+  - two
+mapping:
+  ? sky
+  : blue
+  sea : green|})
+      )
+  ; "5.4" >:: (fun ctxt ->
+      assert_equal ~printer
+        (Ok(`O (
+             [("sequence", `A ([`String ("one"); `String ("two")]));
+              ("mapping", `O ([("sky", `String ("blue")); ("sea", `String ("green"))]))
+             ]
+           )))
+        (of_string {|
+sequence: [ one, two, ]
+mapping: { sky: blue, sea: green }|})
+      )
+  ; "5.5" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {|# Comment only.|})
+      )
+  ; "5.6" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "Anchors are not supported when serialising to JSON"
+        (fun () -> of_string_exn {|anchored: !local &anchor value
+alias: *anchor|})
+      )
+  ; "5.7" >:: (fun ctxt ->
+      assert_equal ~printer
+        (Ok(`O (
+             [("literal", `String ("some\ntext\n")); ("folded", `String ("some text"))])))
+        (of_string {|literal: |
+  some
+  text
+folded: >
+  some
+  text|})
+      )
+  ; "5.8" >:: (fun ctxt ->
+      assert_equal ~printer
+        (Ok(`O ([("single", `String ("text")); ("double", `String ("text"))])))
+        (of_string {|
+single: 'text'
+double: "text"|})
+      )
+  ; "5.9" >:: (fun ctxt ->
+      warning "example 5.9 won't work b/c ocaml-yaml is 1.1-compat" ;
+      assert_raises_exn_pattern
+        "incompatible YAML document"
+        (fun () -> of_string_exn {|%YAML 1.2
+--- text|})
+      )
+  ; "prototype" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "prototype" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "prototype" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
   ; "prototype" >:: (fun ctxt ->
       assert_equal ~printer
           (Ok(`Null))
