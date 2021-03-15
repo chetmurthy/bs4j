@@ -1143,10 +1143,63 @@ foo: bar
 - [ : empty key entry ]
 - [ {JSON: like}:adjacent ]|}))
       )
-  ; "" >:: (fun ctxt ->
+  ; "7.23" >:: (fun ctxt ->
       assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
+        (`A (
+            [`A ([`String ("a"); `String ("b")]); `O ([("a", `String ("b"))]);
+             `String ("a"); `String ("b"); `String ("c")]
+          ))
+        (of_string_exn {|- [ a, b ]
+- { a: b }
+- "a"
+- 'b'
+- c|})
+      )
+  ; "7.24" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "Anchors are not supported when serialising to JSON"
+        (fun () -> of_string_exn {|- !!str "a"
+- 'b'
+- &anchor "c"
+- *anchor
+- !!str|})
+      )
+  ]
+
+let block_styles = "block styles" >::: [
+    "8.1" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A (
+            [`String ("literal\n"); `String (" folded\n"); `String ("keep\n\n");
+             `String (" strip")]
+          ))
+        (of_string_exn {|
+- | # Empty header
+ literal
+- >1 # Indentation indicator
+  folded
+- |+ # Chomping indicator
+ keep
+
+- >1- # Both indicators
+  strip
+|})
+      )
+  ; "8.2" >:: (fun ctxt ->
+      warning "example 8.2 not accepted by ocaml-yaml (b/c 1.1)" ;
+      assert_raises_exn_pattern
+        "found a tab character where an indentation space is expected"
+        (fun () -> of_string_exn {|- |
+ detected
+- >
+ 
+  
+  # detected
+- |1
+  explicit
+- >
+ 	
+ detected|})
       )
   ; "" >:: (fun ctxt ->
       assert_equal ~printer
@@ -1165,6 +1218,7 @@ foo: bar
       )
 
   ]
+
 let examples = "examples" >::: [
     "" >:: (fun ctxt ->
       assert_equal ~printer
@@ -1195,7 +1249,7 @@ let examples = "examples" >::: [
   ]
 
 let tests = "all" >::: [
-    preview ; characters ; basic_structures ; flow_styles
+    preview ; characters ; basic_structures ; flow_styles ; block_styles
 ]
 
 if not !Sys.interactive then
