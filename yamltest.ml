@@ -25,7 +25,7 @@ type value =
   | `Float of float
   | `Null
   | `O of (string * value) list
-  | `String of string ] [@@deriving show]
+  | `String of string ] [@@deriving show,eq]
 
 let yaml_res_pp pps x = Rresult.R.(pp ~error:pp_msg) ~ok:pp_value pps x
 
@@ -250,10 +250,182 @@ rbi:
 
  What a year!|})
       )
-  ; "prototype" >:: (fun ctxt ->
+  ; "2.16" >:: (fun ctxt ->
       assert_equal ~printer
-          (Ok(`Null))
-        (of_string {||})
+        (Ok(`O (
+             [("name", `String ("Mark McGwire"));
+              ("accomplishment",
+               `String ("Mark set a major league home run record in 1998.\n"));
+              ("stats", `String ("65 Home Runs\n0.278 Batting Average\n"))]
+           )))
+        (of_string {|name: Mark McGwire
+accomplishment: >
+  Mark set a major league
+  home run record in 1998.
+stats: |
+  65 Home Runs
+  0.278 Batting Average
+|})
+      )
+  ; "2.17" >:: (fun ctxt ->
+      assert_equal ~printer
+        (Ok(`O (
+             [("unicode", `String ("Sosa did fine.\226\152\186"));
+              ("control", `String ("\b1998\t1999\t2000\n"));
+              ("hex esc", `String ("\r\n is \r\n"));
+              ("single", `String ("\"Howdy!\" he cried."));
+              ("quoted", `String (" # Not a 'comment'."));
+              ("tie-fighter", `String ("|\\-*-/|"))]
+           )))
+        (of_string {|unicode: "Sosa did fine.\u263A"
+control: "\b1998\t1999\t2000\n"
+hex esc: "\x0d\x0a is \r\n"
+
+single: '"Howdy!" he cried.'
+quoted: ' # Not a ''comment''.'
+tie-fighter: '|\-*-/|'|})
+      )
+  ; "2.18" >:: (fun ctxt ->
+      assert_equal ~printer
+        (Ok(`O (
+             [("plain", `String ("This unquoted scalar spans many lines."));
+              ("quoted", `String ("So does this quoted scalar.\n"))]
+           )))
+        (of_string {|plain:
+  This unquoted scalar
+  spans many lines.
+
+quoted: "So does this
+  quoted scalar.\n"
+|})
+      )
+  ; "2.19" >:: (fun ctxt ->
+      assert_equal ~printer
+        (Ok(`O (
+             [("canonical", `Float (12345.)); ("decimal", `Float (12345.));
+              ("octal", `String ("0o14")); ("hexadecimal", `Float (12.))]
+           )))
+        (of_string {|canonical: 12345
+decimal: +12345
+octal: 0o14
+hexadecimal: 0xC
+|})
+      )
+  ; "2.20" >:: (fun ctxt ->
+      assert_equal ~printer
+        (Ok(`O (
+             [("canonical", `Float (1230.15)); ("exponential", `Float (1230.15));
+              ("fixed", `Float (1230.15));
+              ("negative infinity", `Float (neg_infinity));
+              ("not a number", `Float (nan))]
+           )))
+        (of_string {|canonical: 1.23015e+3
+exponential: 12.3015e+02
+fixed: 1230.15
+negative infinity: -.inf
+not a number: .NaN|})
+      )
+  ; "busted-2.20" >:: (fun ctxt ->
+      assert_equal ~printer
+        (Ok(`O (
+             [("not a number", `Float (nan))]
+           )))
+        (of_string {|not a number: .NaN|})
+      )
+  ; "2.21" >:: (fun ctxt ->
+      assert_equal ~printer
+        (Ok(`O (
+             [("null", `Null); ("booleans", `A ([`Bool (true); `Bool (false)]));
+              ("string", `String ("012345"))]
+           )))
+        (of_string {|null:
+booleans: [ true, false ]
+string: '012345'|})
+      )
+  ; "2.22" >:: (fun ctxt ->
+      assert_equal ~printer
+        (Ok(`O (
+             [("canonical", `String ("2001-12-15T02:59:43.1Z"));
+              ("iso8601", `String ("2001-12-14t21:59:43.10-05:00"));
+              ("spaced", `String ("2001-12-14 21:59:43.10 -5"));
+              ("date", `String ("2002-12-14"))]
+           )))
+        (of_string {|canonical: 2001-12-15T02:59:43.1Z
+iso8601: 2001-12-14t21:59:43.10-05:00
+spaced: 2001-12-14 21:59:43.10 -5
+date: 2002-12-14|})
+      )
+  ; "2.23" >:: (fun ctxt ->
+      assert_equal ~printer
+        (Ok(`O (
+             [("not-date", `String ("2002-04-28"));
+              ("picture",
+               `String (
+                 "R0lGODlhDAAMAIQAAP//9/X\n17unp5WZmZgAAAOfn515eXv\nPz7Y6OjuDg4J+fn5OTk6enp\n56enmleECcgggoBADs=\n"
+               ));
+              ("application specific tag",
+               `String (
+                 "The semantics of the tag\nabove may be different for\ndifferent documents.\n"
+               ))
+             ]
+           )))
+        (of_string {|---
+not-date: !!str 2002-04-28
+
+picture: !!binary |
+ R0lGODlhDAAMAIQAAP//9/X
+ 17unp5WZmZgAAAOfn515eXv
+ Pz7Y6OjuDg4J+fn5OTk6enp
+ 56enmleECcgggoBADs=
+
+application specific tag: !something |
+ The semantics of the tag
+ above may be different for
+ different documents.
+|})
+      )
+  ; "2.24" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "Anchors are not supported when serialising to JSON"
+        (fun () -> of_string_exn {|%TAG ! tag:clarkevans.com,2002:
+--- !shape
+  # Use the ! handle for presenting
+  # tag:clarkevans.com,2002:circle
+- !circle
+  center: &ORIGIN {x: 73, y: 129}
+  radius: 7
+- !line
+  start: *ORIGIN
+  finish: { x: 89, y: 102 }
+- !label
+  start: *ORIGIN
+  color: 0xFFEEBB
+  text: Pretty vector drawing.|})
+      )
+  ; "2.25" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`O ([("Mark McGwire", `Null); ("Sammy Sosa", `Null); ("Ken Griff", `Null)])))
+        (of_string {|# Sets are represented as a
+# Mapping where each key is
+# associated with a null value
+--- !!set
+? Mark McGwire
+? Sammy Sosa
+? Ken Griff|})
+      )
+  ; "2.26" >:: (fun ctxt ->
+      assert_equal ~printer
+        (Ok(`A (
+             [`O ([("Mark McGwire", `Float (65.))]);
+              `O ([("Sammy Sosa", `Float (63.))]); `O ([("Ken Griffy", `Float (58.))])]
+           )))
+        (of_string {|# Ordered maps are represented as
+# A sequence of mappings, with
+# each mapping having one key
+--- !!omap
+- Mark McGwire: 65
+- Sammy Sosa: 63
+- Ken Griffy: 58|})
       )
   ; "prototype" >:: (fun ctxt ->
       assert_equal ~printer
