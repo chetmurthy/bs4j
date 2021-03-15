@@ -627,20 +627,26 @@ Not indented:
       )
   ; "6.2" >:: (fun ctxt ->
       warning "example 6.2 won't work b/c ocaml-yaml refuses to parse it (but perl's YAML::PP (1.2-compat) does)" ;
+      assert_raises_exn_pattern
+        "found character that cannot start any token"
+        (fun () ->
       assert_equal ~printer
         (`Null)
         (of_string_exn "? a\n\
                         : -\tb\n\
                        \  -  -\tc\
-                       \     - d")
+                       \     - d"))
       )
   ; "6.3" >:: (fun ctxt ->
       warning "example 6.3 won't work b/c ocaml-yaml refuses to parse it (but perl's YAML::PP (1.2-compat) does)" ;
+      assert_raises_exn_pattern
+        "found character that cannot start any token"
+        (fun () ->
       assert_equal ~printer
           (`Null)
         (of_string_exn "- foo:\t bar\n\
                         - - baz\n\
-                       \  -\tbaz")
+                       \  -\tbaz"))
       )
   ; "6.4" >:: (fun ctxt ->
       assert_equal ~printer
@@ -726,25 +732,52 @@ Chomping: |
   value
 |})
       )
-  ; "" >:: (fun ctxt ->
-      assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
+  ; "6.12" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "only string keys are supported"
+        (fun () -> of_string_exn {|{ first: Sammy, last: Sosa }:
+# Statistics:
+  hr:  # Home runs
+     65
+  avg: # Average
+   0.278|})
       )
-  ; "" >:: (fun ctxt ->
+  ; "6.13" >:: (fun ctxt ->
+      warning "example 6.13 won't work b/c ocaml-yaml refuses to parse it (but perl's YAML::PP (1.2-compat) does)" ;
+      assert_raises_exn_pattern
+        "found unknown directive"
+        (fun () ->
       assert_equal ~printer
           (`Null)
-        (of_string_exn {||})
+        (of_string_exn {|%FOO  bar baz # Should be ignored
+               # with a warning.
+--- "foo"|}))
       )
-  ; "" >:: (fun ctxt ->
+  ; "6.14" >:: (fun ctxt ->
+      warning "example 6.14 won't work b/c ocaml-yaml refuses to parse it (but perl's YAML::PP (1.2-compat) does)" ;
+      assert_raises_exn_pattern
+        "found incompatible YAML document"
+        (fun () ->
       assert_equal ~printer
           (`Null)
-        (of_string_exn {||})
+        (of_string_exn {|%YAML 1.3 # Attempt parsing
+           # with a warning
+---
+"foo"|}))
       )
-  ; "" >:: (fun ctxt ->
+  ; "6.15" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "found incompatible YAML document"
+        (fun () -> of_string_exn {|%YAML 1.2
+%YAML 1.1
+foo|})
+      )
+  ; "6.16" >:: (fun ctxt ->
       assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
+        (`String ("foo"))
+        (of_string_exn {|%TAG !yaml! tag:yaml.org,2002:
+---
+!yaml!str "foo"|})
       )
   ; "" >:: (fun ctxt ->
       assert_equal ~printer
