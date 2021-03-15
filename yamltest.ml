@@ -31,11 +31,8 @@ let printer x = Fmt.(str "%a" pp_value x)
 
 let cmp = equal_value
 
-let examples = "examples" >::: [
-    "empty" >:: (fun ctxt ->
-        ()
-      )
-  ; "2.1" >:: (fun ctxt ->
+let preview = "preview" >::: [
+    "2.1" >:: (fun ctxt ->
         assert_equal ~printer
           (`A (
               [`String ("Mark McGwire")
@@ -489,7 +486,11 @@ Stack:
       foo = bar
 |})
       )
-  ; "5.3" >:: (fun ctxt ->
+  ]
+
+
+let characters = "characters" >::: [
+    "5.3" >:: (fun ctxt ->
       assert_equal ~printer
         (`O (
             [("sequence", `A ([`String ("one"); `String ("two")]));
@@ -597,7 +598,12 @@ block:	|
   "\c
   \xq-"|})
       )
-  ; "6.1" >:: (fun ctxt ->
+
+  ]
+
+
+let basic_structures = "basic structures" >::: [
+    "6.1" >:: (fun ctxt ->
       assert_equal ~printer
         (`O (
             [("Not indented",
@@ -779,12 +785,163 @@ foo|})
 ---
 !yaml!str "foo"|})
       )
+  ; "6.17" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "found duplicate %TAG directive"
+        (fun () ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {|%TAG ! !foo
+%TAG ! !foo
+bar|}))
+      )
+  ; "6.18" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("bar"))
+        (of_string_exn {|# Private
+!foo "bar"
+...
+# Global
+%TAG ! tag:example.com,2000:app/
+---
+!foo "bar"|})
+      )
+  ; "6.19" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("1 - 3"))
+        (of_string_exn {|
+%TAG !! tag:example.com,2000:app/
+---
+!!int 1 - 3 # Interval, not integer|})
+      )
+  ; "6.20" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("bar"))
+        (of_string_exn {|
+%TAG !e! tag:example.com,2000:app/
+---
+!e!foo "bar"|})
+      )
+  ; "6.21" >:: (fun ctxt ->
+      warning "example 6.21 has multiple docs: this isn't implemented right" ;
+      assert_equal ~printer
+        (`String ("fluorescent"))
+        (of_string_exn {|%TAG !m! !my-
+--- # Bulb here
+!m!light fluorescent
+...
+%TAG !m! !my-
+--- # Color here
+!m!light green|})
+      )
+  ; "6.22" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A ([`String ("bar")]))
+        (of_string_exn {|%TAG !e! tag:example.com,2000:app/
+---
+- !e!foo "bar"|})
+      )
+  ; "6.23" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "Anchors are not supported when serialising to JSON"
+        (fun () -> of_string_exn {|!!str &a1 "foo":
+  !!str bar
+&a2 baz : *a1|})
+      )
+  ; "6.24" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O ([("foo", `String ("baz"))]))
+        (of_string_exn {|!<tag:yaml.org,2002:str> foo :
+  !<!bar> baz|})
+      )
+  ; "6.25" >:: (fun ctxt ->
+      warning "example 6.25 has invalid verbatim tags: this isn't implemented right" ;
+      assert_equal ~printer
+        (`A ([`String ("foo"); `String ("bar")]))
+        (of_string_exn {|- !<!> foo
+- !<$:?> bar|})
+      )
+  ; "6.26" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A ([`String ("foo"); `String ("bar"); `String ("baz")]))
+        (of_string_exn {|%TAG !e! tag:example.com,2000:app/
+---
+- !local foo
+- !!str bar
+- !e!tag%21 baz|})
+      )
+  ; "6.27" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "did not find expected tag URI"
+        (fun () ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {|%TAG !e! tag:example,2000:app/
+---
+- !e! foo
+- !h!bar baz|}))
+      )
+  ; "6.28" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A ([`String ("12"); `Float (12.); `Float (12.)]))
+        (of_string_exn {|# Assuming conventional resolution:
+- "12"
+- 12
+- ! 12|})
+      )
+  ; "6.29" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "Anchors are not supported when serialising to JSON"
+        (fun () -> of_string_exn {|First occurrence: &anchor Value
+Second occurrence: *anchor|})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {||})
+      )
+  ]
+
+let flow_styles = "flow styles" >::: [
+    "7.1" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "Anchors are not supported when serialising to JSON"
+        (fun () -> of_string_exn {|First occurrence: &anchor Foo
+Second occurrence: *anchor
+Override anchor: &anchor Bar
+Reuse anchor: *anchor|})
+      )
+  ; "7.2" >:: (fun ctxt ->
+      warning "example 7.2 not accepted by ocaml-yaml (b/c 1.1)" ;
+      assert_raises_exn_pattern
+        "did not find expected"
+        (fun () ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {|{
+  foo : !!str,
+  !!str : bar,
+}|}))
+      )
   ; "" >:: (fun ctxt ->
       assert_equal ~printer
           (`Null)
         (of_string_exn {||})
       )
   ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {||})
+      )
+
+  ]
+let examples = "examples" >::: [
+"" >:: (fun ctxt ->
       assert_equal ~printer
           (`Null)
         (of_string_exn {||})
@@ -812,8 +969,9 @@ foo|})
 
   ]
 
-
-let tests = "all" >::: [examples]
+let tests = "all" >::: [
+    preview ; characters ; basic_structures ; flow_styles
+]
 
 if not !Sys.interactive then
   run_test_tt_main tests
