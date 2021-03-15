@@ -923,6 +923,124 @@ Reuse anchor: *anchor|})
   !!str : bar,
 }|}))
       )
+  ; "7.3" >:: (fun ctxt ->
+      warning "example 7.2 not accepted by ocaml-yaml (b/c 1.1)" ;
+      assert_raises_exn_pattern
+        "found unexpected ':' character"
+        (fun () ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {|{
+  ? foo :,
+  : bar,
+}|}))
+      )
+  ; "7.4" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("implicit block key",
+              `A ([`O ([("implicit flow key", `String ("value"))])]))]
+          ))
+        (of_string_exn {|"implicit block key" : [
+  "implicit flow key" : value,
+ ]|})
+      )
+  ; "7.5" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("folded to a space,\nto a line feed, or \t \tnon-content"))
+        (of_string_exn {|"folded 
+to a space,	
+ 
+to a line feed, or 	\
+ \ 	non-content"|})
+      )
+  ; "7.6" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String (" 1st non-empty\n2nd non-empty 3rd non-empty "))
+        (of_string_exn {|" 1st non-empty
+
+ 2nd non-empty 
+	3rd non-empty "|})
+      )
+  ; "7.7" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("here's to \"quotes\""))
+        (of_string_exn {| 'here''s to "quotes"'|})
+      )
+  ; "7.8" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("implicit block key",
+              `A ([`O ([("implicit flow key", `String ("value"))])]))]
+          ))
+        (of_string_exn {|'implicit block key' : [
+  'implicit flow key' : value,
+ ]|})
+      )
+  ; "7.9" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String (" 1st non-empty\n2nd non-empty 3rd non-empty "))
+        (of_string_exn {|
+' 1st non-empty
+
+ 2nd non-empty 
+	3rd non-empty '|})
+      )
+  ; "7.10" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "did not find expected node content"
+        (fun () ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {|# Outside flow collection:
+- ::vector
+- ": - ()"
+- Up, up, and away!
+- -123
+- http://example.com/foo#bar
+# Inside flow collection:
+- [ ::vector,
+  ": - ()",
+  "Up, up and away!",
+  -123,
+  http://example.com/foo#bar ]
+|}))
+      )
+  ; "7.10-::vector" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A ([`String ("::vector"); `A ([`String ("::vector")])]))
+        (of_string_exn {|# Outside flow collection:
+- ::vector
+- [ "::vector" ]
+|})
+      )
+  ; "7.10-::vector-busted" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "did not find expected node content"
+        (fun () ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {|# Outside flow collection:
+- ::vector
+- [ ::vector ]
+|}))
+      )
+  ; "7.11" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("implicit block key",
+              `A ([`O ([("implicit flow key", `String ("value"))])]))]
+          ))
+        (of_string_exn {|
+implicit block key : [
+  implicit flow key : value,
+ ]|})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {||})
+      )
   ; "" >:: (fun ctxt ->
       assert_equal ~printer
           (`Null)
@@ -941,7 +1059,7 @@ Reuse anchor: *anchor|})
 
   ]
 let examples = "examples" >::: [
-"" >:: (fun ctxt ->
+    "" >:: (fun ctxt ->
       assert_equal ~printer
           (`Null)
         (of_string_exn {||})
