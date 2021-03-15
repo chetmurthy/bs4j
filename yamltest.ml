@@ -586,12 +586,73 @@ block:	|
   	printf("Hello, world!\n");
   }|})
       )
-  ; "prototype" >:: (fun ctxt ->
+  ; "5.13" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`String ("Fun with \x5C \x22 \x07 \x08 \x1B \x0C \x0A \x0D \x09 \x0B \x00 \x20 \xA0 \x85 \u2028 \u2029 A A A")))
+        (of_string {|"Fun with \\
+\" \a \b \e \f \
+\n \r \t \v \0 \
+\  \_ \N \L \P \
+\x41 \u0041 \U00000041"|})
+      )
+  ; "5.14" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "unknown escape character"
+        (fun () -> of_string_exn {|Bad escapes:
+  "\c
+  \xq-"|})
+      )
+  ; "" >:: (fun ctxt ->
       assert_equal ~printer
           (Ok(`Null))
         (of_string {||})
       )
-  ; "prototype" >:: (fun ctxt ->
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (Ok(`Null))
+        (of_string {||})
+      )
+  ; "" >:: (fun ctxt ->
       assert_equal ~printer
           (Ok(`Null))
         (of_string {||})
