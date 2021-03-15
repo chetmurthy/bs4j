@@ -1036,6 +1036,113 @@ implicit block key : [
   implicit flow key : value,
  ]|})
       )
+  ; "7.12" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("1st non-empty\n2nd non-empty 3rd non-empty"))
+        (of_string_exn {|1st non-empty
+
+ 2nd non-empty 
+	3rd non-empty|})
+      )
+  ; "7.13" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A (
+            [`A ([`String ("one"); `String ("two")]);
+             `A ([`String ("three"); `String ("four")])]
+          ))
+        (of_string_exn {|- [ one, two, ]
+- [three ,four]|})
+      )
+  ; "7.14" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A (
+            [`String ("double quoted"); `String ("single quoted");
+             `String ("plain text"); `A ([`String ("nested")]);
+             `O ([("single", `String ("pair"))])]
+          ))
+        (of_string_exn {|[
+"double
+ quoted", 'single
+           quoted',
+plain
+ text, [ nested ],
+single: pair,
+]|})
+      )
+  ; "7.15" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A (
+            [`O ([("one", `String ("two")); ("three", `String ("four"))]);
+             `O ([("five", `String ("six")); ("seven", `String ("eight"))])]
+          ))
+        (of_string_exn {|
+- { one : two , three: four , }
+- {five: six,seven : eight}|})
+      )
+  ; "7.16" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("explicit", `String ("entry")); ("implicit", `String ("entry"));
+             ("", `Null)]
+          ))
+        (of_string_exn {|{
+? explicit: entry,
+implicit: entry,
+?
+}|})
+      )
+  ; "7.17" >:: (fun ctxt ->
+      warning "example 7.2 not accepted by ocaml-yaml (b/c 1.1)" ;
+      assert_raises_exn_pattern
+        "found unexpected ':' character"
+        (fun () ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {|{
+unquoted : "separate",
+http://foo.com,
+omitted value:,
+: omitted key,
+}|}))
+      )
+  ; "7.18" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("adjacent", `String ("value")); ("readable", `String ("\194\183value"));
+             ("empty", `Null)]
+          ))
+        (of_string_exn {|{
+"adjacent":value,
+"readable":·value,
+"empty":
+}|})
+      )
+  ; "7.19" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A ([`O ([("foo", `String ("bar"))])]))
+        (of_string_exn {|[
+foo: bar
+]|})
+      )
+  ; "7.20" >:: (fun ctxt ->
+      assert_equal ~printer
+        ( `A ([`O ([("foo bar", `String ("baz"))])]))
+        (of_string_exn {|[
+? foo
+ bar : baz
+]|})
+      )
+  ; "7.21" >:: (fun ctxt ->
+      warning "example 7.21 not accepted by ocaml-yaml (b/c 1.1)" ;
+      assert_raises_exn_pattern
+        "did not find expected node content"
+        (fun () ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {|- [ YAML : separate ]
+- [ : empty key entry ]
+- [ {JSON: like}:adjacent ]|}))
+      )
   ; "" >:: (fun ctxt ->
       assert_equal ~printer
           (`Null)
