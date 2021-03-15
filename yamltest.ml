@@ -427,15 +427,73 @@ application specific tag: !something |
 - Sammy Sosa: 63
 - Ken Griffy: 58|})
       )
-  ; "prototype" >:: (fun ctxt ->
-      assert_equal ~printer
-          (Ok(`Null))
-        (of_string {||})
+  ; "2.27" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "Anchors are not supported when serialising to JSON"
+        (fun () -> of_string_exn {|--- !<tag:clarkevans.com,2002:invoice>
+invoice: 34843
+date   : 2001-01-23
+bill-to: &id001
+    given  : Chris
+    family : Dumars
+    address:
+        lines: |
+            458 Walkman Dr.
+            Suite #292
+        city    : Royal Oak
+        state   : MI
+        postal  : 48046
+ship-to: *id001
+product:
+    - sku         : BL394D
+      quantity    : 4
+      description : Basketball
+      price       : 450.00
+    - sku         : BL4438H
+      quantity    : 1
+      description : Super Hoop
+      price       : 2392.00
+tax  : 251.42
+total: 4443.52
+comments:
+    Late afternoon is best.
+    Backup contact is Nancy
+    Billsmer @ 338-4338.|})
       )
-  ; "prototype" >:: (fun ctxt ->
+  ; "2.28" >:: (fun ctxt ->
+      warning "example 2.28 has multiple docs: this isn't implemented right" ;
       assert_equal ~printer
-          (Ok(`Null))
-        (of_string {||})
+        (Ok(`O (
+             [("Time", `String ("2001-11-23 15:01:42 -5")); ("User", `String ("ed"));
+              ("Warning", `String ("This is an error message for the log file"))]
+           )))
+        (of_string {|---
+Time: 2001-11-23 15:01:42 -5
+User: ed
+Warning:
+  This is an error message
+  for the log file
+---
+Time: 2001-11-23 15:02:31 -5
+User: ed
+Warning:
+  A slightly different error
+  message.
+---
+Date: 2001-11-23 15:03:17 -5
+User: ed
+Fatal:
+  Unknown variable "bar"
+Stack:
+  - file: TopClass.py
+    line: 23
+    code: |
+      x = MoreObject("345\n")
+  - file: MoreClass.py
+    line: 58
+    code: |-
+      foo = bar
+|})
       )
   ; "prototype" >:: (fun ctxt ->
       assert_equal ~printer
