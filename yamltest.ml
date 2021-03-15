@@ -557,20 +557,34 @@ double: "text"|})
         (fun () -> of_string_exn {|%YAML 1.2
 --- text|})
       )
-  ; "prototype" >:: (fun ctxt ->
-      assert_equal ~printer
-          (Ok(`Null))
-        (of_string {||})
+  ; "5.10" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "found character that cannot start any token"
+        (fun () -> of_string_exn {|commercial-at: @text
+grave-accent: `text|})
       )
-  ; "prototype" >:: (fun ctxt ->
+  ; "5.11" >:: (fun ctxt ->
       assert_equal ~printer
-          (Ok(`Null))
-        (of_string {||})
+        (Ok(`String ("Line break (no glyph)\nLine break (glyphed)\n")))
+        (of_string {||
+  Line break (no glyph)
+  Line break (glyphed)
+|})
       )
-  ; "prototype" >:: (fun ctxt ->
+  ; "5.12" >:: (fun ctxt ->
       assert_equal ~printer
-          (Ok(`Null))
-        (of_string {||})
+        (Ok(`O (
+             [("quoted", `String ("Quoted \t"));
+              ("block", `String ("void main() {\n\
+                                  \tprintf(\"Hello, world!\\n\");\n\
+                                  }"))]
+           )))
+        (of_string {|# Tabs and spaces
+quoted: "Quoted 	"
+block:	|
+  void main() {
+  	printf("Hello, world!\n");
+  }|})
       )
   ; "prototype" >:: (fun ctxt ->
       assert_equal ~printer
