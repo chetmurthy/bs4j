@@ -694,6 +694,68 @@ Chomping: |
   baz
 |})
       )
+  ; "6.8" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String (" foo\nbar\nbaz "))
+        (of_string_exn {|"
+  foo 
+ 
+  	 bar
+
+  baz
+"|})
+      )
+  ; "6.9" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O ([("key", `String ("value"))]))
+        (of_string_exn {|key:    # Comment
+  value|})
+      )
+  ; "6.10" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {|  # Comment
+   
+|})
+      )
+  ; "6.11" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O ([("key", `String ("value"))]))
+        (of_string_exn {|key:    # Comment
+        # lines
+  value
+|})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {||})
+      )
   ; "" >:: (fun ctxt ->
       assert_equal ~printer
           (`Null)
