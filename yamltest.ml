@@ -629,36 +629,70 @@ Not indented:
       warning "example 6.2 won't work b/c ocaml-yaml refuses to parse it (but perl's YAML::PP (1.2-compat) does)" ;
       assert_equal ~printer
         (`Null)
+        (of_string_exn "? a\n\
+                        : -\tb\n\
+                       \  -  -\tc\
+                       \     - d")
+      )
+  ; "6.3" >:: (fun ctxt ->
+      warning "example 6.3 won't work b/c ocaml-yaml refuses to parse it (but perl's YAML::PP (1.2-compat) does)" ;
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn "- foo:\t bar\n\
+                        - - baz\n\
+                       \  -\tbaz")
+      )
+  ; "6.4" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("plain", `String ("text lines")); ("quoted", `String ("text lines"));
+             ("block", `String ("text\n \tlines"))]
+          ))
         (of_string_exn {|
-? a
-: -	b
-  - -	c
-    - d|})
+plain: text
+  lines
+quoted: "text
+  	lines"
+block: |
+  text
+   	lines|})
       )
-  ; "" >:: (fun ctxt ->
+  ; "6.5" >:: (fun ctxt ->
       assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
+        (`O (
+            [("Folding", `String ("Empty line\nas a line feed"));
+             ("Chomping", `String ("Clipped empty lines\n"))]
+          ))
+        (of_string_exn {|
+Folding:
+  "Empty line
+   	
+  as a line feed"
+Chomping: |
+  Clipped empty lines
+ |})
       )
-  ; "" >:: (fun ctxt ->
+  ; "6.6" >:: (fun ctxt ->
       assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
+          (`String ("trimmed\n\n\nas space"))
+        (of_string_exn {|>-
+  trimmed
+  
+ 
+
+  as
+  space|})
       )
-  ; "" >:: (fun ctxt ->
+  ; "6.7" >:: (fun ctxt ->
       assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
-      )
-  ; "" >:: (fun ctxt ->
-      assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
-      )
-  ; "" >:: (fun ctxt ->
-      assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
+        (`String ("foo \n\n\t bar\n\nbaz\n"))
+        (of_string_exn {|>
+  foo 
+ 
+  	 bar
+
+  baz
+|})
       )
   ; "" >:: (fun ctxt ->
       assert_equal ~printer
