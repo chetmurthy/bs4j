@@ -1478,25 +1478,51 @@ keep: |+
 "quoted key":
 - entry|}))
       )
-  ; "" >:: (fun ctxt ->
-      assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
+  ; "8.19" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "only string keys are supported"
+        (fun () -> of_string_exn {|
+- sun: yellow
+- ? earth: blue
+  : moon: white
+|})
       )
-  ; "" >:: (fun ctxt ->
+  ; "8.20" >:: (fun ctxt ->
       assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
+        (`A (
+            [`String ("flow in block"); `String ("Block scalar\n");
+             `O ([("foo", `String ("bar"))])]
+          ))
+        (of_string_exn {|-
+  "flow in block"
+- >
+ Block scalar
+- !!map # Block collection
+  foo : bar
+|})
       )
-  ; "" >:: (fun ctxt ->
+  ; "8.21" >:: (fun ctxt ->
       assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
+        (`O ([("literal", `String ("value\n")); ("folded", `String ("value"))]))
+        (of_string_exn {|literal: |2
+  value
+folded:
+   !foo
+  >1
+ value|})
       )
-  ; "" >:: (fun ctxt ->
+  ; "8.22" >:: (fun ctxt ->
       assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
+        (`O (
+            [("sequence", `A ([`String ("entry"); `A ([`String ("nested")])]));
+             ("mapping", `O ([("foo", `String ("bar"))]))]
+          ))
+        (of_string_exn {|sequence: !!seq
+- entry
+- !!seq
+ - nested
+mapping: !!map
+ foo: bar|})
       )
   ; "" >:: (fun ctxt ->
       assert_equal ~printer
