@@ -1330,6 +1330,164 @@ keep: |+
 
 # Comment|})
       )
+  ; "8.11" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`String (
+      "\n\
+      folded line\n\
+      next line\n\
+      \  * bullet\n\
+      \n\
+      \  * list\n\
+      \  * lines\n\
+      \n\
+      last line\n"
+  ))
+        (of_string_exn {|>
+
+ folded
+ line
+
+ next
+ line
+   * bullet
+
+   * list
+   * lines
+
+ last
+ line
+
+# Comment|})
+      )
+  ; "8.12" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String (
+      "\n\
+      folded line\n\
+      next line\n\
+      \  * bullet\n\
+      \n\
+      \  * list\n\
+      \  * line\n\
+      \n\
+      last line\n"
+          ))
+        (of_string_exn {|>
+
+ folded
+ line
+
+ next
+ line
+   * bullet
+
+   * list
+   * line
+
+ last
+ line
+
+# Comment|})
+      )
+  ; "8.13" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String (
+      "\n\
+      folded line\n\
+      next line\n\
+      \  * bullet\n\
+      \n\
+      \  * list\n\
+      \  * line\n\
+      \n\
+       last line\n"
+    ))
+        (of_string_exn {|>
+
+ folded
+ line
+
+ next
+ line
+   * bullet
+
+   * list
+   * line
+
+ last
+ line
+
+# Comment|})
+      )
+  ; "8.14" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("block sequence",
+              `A ([`String ("one"); `O ([("two", `String ("three"))])]))]
+          ))
+        (of_string_exn {|block sequence:
+  - one
+  - two : three
+|})
+      )
+  ; "8.15" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A (
+            [`Null; `String ("block node\n"); `A ([`String ("one"); `String ("two")]);
+             `O ([("one", `String ("two"))])]
+          ))
+        (of_string_exn {|
+- # Empty
+- |
+ block node
+- - one # Compact
+  - two # sequence
+- one: two # Compact mapping|})
+      )
+  ; "8.16" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O ([("block mapping", `O ([("key", `String ("value"))]))]))
+        (of_string_exn {|block mapping:
+ key: value
+|})
+      )
+  ; "8.17" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("explicit key", `Null);
+             ("block key\n", `A ([`String ("one"); `String ("two")]))]
+          ))
+        (of_string_exn {|
+? explicit key # Empty value
+? |
+  block key
+: - one # Explicit compact
+  - two # block value
+|})
+      )
+  ; "8.18" >:: (fun ctxt ->
+      warning "example 8.18 not accepted by ocaml-yaml (b/c 1.1)" ;
+      assert_raises_exn_pattern
+        "did not find expected key"
+        (fun () ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {|plain key: in-line value
+: # Both empty
+"quoted key":
+- entry|}))
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {||})
+      )
   ; "" >:: (fun ctxt ->
       assert_equal ~printer
           (`Null)
