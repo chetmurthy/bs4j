@@ -1201,6 +1201,145 @@ let block_styles = "block styles" >::: [
  	
  detected|})
       )
+  ; "8.3" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "did not find expected '-' indicator"
+        (fun () -> of_string_exn {|- |
+  
+ text
+- >
+  text
+ text
+- |2
+ text|})
+      )
+  ; "8.4" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("strip", `String ("text")); ("clip", `String ("text\n"));
+             ("keep", `String ("text\n"))]
+          ))
+        (of_string_exn {|strip: |-
+  text
+clip: |
+  text
+keep: |+
+  text
+|})
+      )
+  ; "8.5" >:: (fun ctxt ->
+      warning "example 8.5 not handled correctly by ocaml-yaml (trailing \\n)" ;
+      assert_equal ~printer
+        (`O (
+            [("strip", `String ("# text")); ("clip", `String ("# text\n"));
+             ("keep", `String ("# text\n"))]
+          ))
+        (of_string_exn {| # Strip
+  # Comments:
+strip: |-
+  # text
+  
+ # Clip
+  # comments:
+
+clip: |
+  # text
+ 
+ # Keep
+  # comments:
+
+keep: |+
+  # text
+
+ # Trail
+  # comments.|})
+      )
+  ; "8.6" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("strip", `String ("")); ("clip", `String ("")); ("keep", `String ("\n"))]
+          ))
+        (of_string_exn {|
+strip: >-
+
+clip: >
+
+keep: |+
+
+|})
+      )
+  ; "8.7" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("literal\n\ttext\n"))
+        (of_string_exn {||
+ literal
+ 	text
+
+|})
+      )
+  ; "8.8" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("\n\nliteral\n \n\ntext\n"))
+        (of_string_exn {|
+|
+ 
+  
+  literal
+   
+  
+  text
+
+ # Comment|})
+      )
+  ; "8.9" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("folded text\n"))
+        (of_string_exn {|>
+ folded
+ text
+
+|})
+      )
+  ; "8.10" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String (
+      "\n\
+      folded line\n\
+      next line\n\
+      \  * bullet\n\
+      \n\
+      \  * list\n\
+      \  * lines\n\
+      \n\
+      last line\n"
+          ))
+        (of_string_exn {|>
+
+ folded
+ line
+
+ next
+ line
+   * bullet
+
+   * list
+   * lines
+
+ last
+ line
+
+# Comment|})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {||})
+      )
+  ; "" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {||})
+      )
   ; "" >:: (fun ctxt ->
       assert_equal ~printer
           (`Null)
