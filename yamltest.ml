@@ -895,11 +895,6 @@ bar|}))
         (fun () -> of_string_exn {|First occurrence: &anchor Value
 Second occurrence: *anchor|})
       )
-  ; "" >:: (fun ctxt ->
-      assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
-      )
   ]
 
 let flow_styles = "flow styles" >::: [
@@ -1524,22 +1519,223 @@ folded:
 mapping: !!map
  foo: bar|})
       )
-  ; "" >:: (fun ctxt ->
-      assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
-      )
-  ; "" >:: (fun ctxt ->
-      assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
-      )
-  ; "" >:: (fun ctxt ->
-      assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
-      )
+  ]
 
+let yaml_character_stream = "YAML Character Stream" >::: [
+    "9.2" >:: (fun ctxt ->
+      warning "example 9.2 won't work b/c ocaml-yaml refuses to parse it" ;
+      assert_raises_exn_pattern
+        "found incompatible YAML document"
+        (fun () ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {|%YAML 1.2
+---
+Document
+... # Suffix|}))
+      )
+  ; "9.3" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("Bare document"))
+        (of_string_exn {|Bare
+document
+...
+# No document
+...
+|
+%!PS-Adobe-2.0 # Not the first line|})
+      )
+  ; "9.4" >:: (fun ctxt ->
+      warning "example 9.4 won't work b/c ocaml-yaml refuses to parse it" ;
+      assert_raises_exn_pattern
+        "did not find expected ',' or '}'"
+        (fun () ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {|---
+{ matches
+% : 20 }
+...
+---
+# Empty
+...|}))
+      )
+  ; "9.5" >:: (fun ctxt ->
+      warning "example 9.5 won't work b/c ocaml-yaml refuses to parse it" ;
+      assert_raises_exn_pattern
+        "found incompatible YAML document"
+        (fun () ->
+      assert_equal ~printer
+          (`Null)
+        (of_string_exn {|
+%YAML 1.2
+--- |
+%!PS-Adobe-2.0
+...
+%YAML 1.2
+---
+# Empty
+...|}))
+      )
+  ; "9.6" >:: (fun ctxt ->
+      warning "example 9.6 has multiple docs: this isn't implemented right" ;
+      assert_equal ~printer
+          (`String ("Document"))
+        (of_string_exn {|Document
+---
+# Empty
+...
+%YAML 1.2
+---
+matches %: 20|})
+      )
+  ]
+
+let recommended_schemas = "Recommended Schemas" >::: [
+    "10.1" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("Block style",
+              `O (
+                [("Clark", `String ("Evans")); ("Ingy", `String ("d\195\182t Net"));
+                 ("Oren", `String ("Ben-Kiki"))]
+              ));
+             ("Flow style",
+              `O (
+                [("Clark", `String ("Evans")); ("Ingy", `String ("d\195\182t Net"));
+                 ("Oren", `String ("Ben-Kiki"))]
+              ))
+            ]
+          ))
+        (of_string_exn {|Block style: !!map
+  Clark : Evans
+  Ingy  : döt Net
+  Oren  : Ben-Kiki
+
+Flow style: !!map { Clark: Evans, Ingy: döt Net, Oren: Ben-Kiki }|})
+      )
+  ; "10.2" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("Block style",
+              `A (
+                [`String ("Clark Evans"); `String ("Ingy d\195\182t Net");
+                 `String ("Oren Ben-Kiki")]
+              ));
+             ("Flow style",
+              `A (
+                [`String ("Clark Evans"); `String ("Ingy d\195\182t Net");
+                 `String ("Oren Ben-Kiki")]
+              ))
+            ]
+          ))
+        (of_string_exn {|Block style: !!seq
+- Clark Evans
+- Ingy döt Net
+- Oren Ben-Kiki
+
+Flow style: !!seq [ Clark Evans, Ingy döt Net, Oren Ben-Kiki ]|})
+      )
+  ; "10.3" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("Block style", `String ("String: just a theory."));
+             ("Flow style", `String ("String: just a theory."))]
+          ))
+        (of_string_exn {|Block style: !!str |-
+  String: just a theory.
+
+Flow style: !!str "String: just a theory."|})
+      )
+  ; "10.4" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("null", `String ("value for null key")); ("key with null value", `Null)]))
+        (of_string_exn {|!!null null: value for null key
+key with null value: !!null null|})
+      )
+  ; "10.5" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("YAML is a superset of JSON", `Bool (true));
+             ("Pluto is a planet", `Bool (false))]
+          ))
+        (of_string_exn {|
+YAML is a superset of JSON: !!bool true
+Pluto is a planet: !!bool false|})
+      )
+  ; "10.6" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("negative", `Float (-12.)); ("zero", `Float (0.));
+             ("positive", `Float (34.))]
+          ))
+        (of_string_exn {|negative: !!int -12
+zero: !!int 0
+positive: !!int 34|})
+      )
+  ; "10.7" >:: (fun ctxt ->
+      assert_equal ~printer
+        ~cmp
+        (`O (
+            [("negative", `Float (-1.)); ("zero", `Float (0.));
+             ("positive", `Float (23000.)); ("infinity", `Float (infinity));
+             ("not a number", `Float (nan))]
+          ))
+        (of_string_exn {|negative: !!float -1
+zero: !!float 0
+positive: !!float 2.3e4
+infinity: !!float .inf
+not a number: !!float .nan|})
+      )
+  ; "10.8" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("A null", `Null); ("Booleans", `A ([`Bool (true); `Bool (false)]));
+             ("Integers", `A ([`Float (0.); `Float (-0.); `Float (3.); `Float (-19.)]));
+             ("Floats",
+              `A ([`Float (0.); `Float (-0.); `Float (12000.); `Float (-200000.)]));
+             ("Invalid",
+              `A ([`Bool (true); `Null; `String ("0o7"); `Float (58.); `Float (12.3)]))
+            ]
+          ))
+        (of_string_exn {|
+A null: null
+Booleans: [ true, false ]
+Integers: [ 0, -0, 3, -19 ]
+Floats: [ 0., -0.0, 12e03, -2E+05 ]
+Invalid: [ True, Null, 0o7, 0x3A, +12.3 ]|})
+      )
+  ; "10.9" >:: (fun ctxt ->
+      assert_equal ~printer
+        ~cmp
+        (`O (
+            [("A null", `Null); ("Also a null", `Null); ("Not a null", `String (""));
+             ("Booleans",
+              `A ([`Bool (true); `Bool (true); `Bool (false); `Bool (false)]));
+             ("Integers",
+              `A ([`Float (0.); `String ("0o7"); `Float (58.); `Float (-19.)]));
+             ("Floats",
+              `A (
+                [`Float (0.); `Float (-0.); `Float (0.5); `Float (12000.);
+                 `Float (-200000.)]
+              ));
+             ("Also floats",
+              `A (
+                [`Float (infinity); `String ("-.Inf"); `String ("+.INF"); `Float (nan)
+                ]
+              ))
+            ]
+          ))
+        (of_string_exn {|
+A null: null
+Also a null: # Empty
+Not a null: ""
+Booleans: [ true, True, false, FALSE ]
+Integers: [ 0, 0o7, 0x3A, -19 ]
+Floats: [ 0., -0.0, .5, +12e03, -2E+05 ]
+Also floats: [ .inf, -.Inf, +.INF, .NAN ]|})
+      )
   ]
 
 let examples = "examples" >::: [
@@ -1553,26 +1749,11 @@ let examples = "examples" >::: [
           (`Null)
         (of_string_exn {||})
       )
-  ; "" >:: (fun ctxt ->
-      assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
-      )
-  ; "" >:: (fun ctxt ->
-      assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
-      )
-  ; "" >:: (fun ctxt ->
-      assert_equal ~printer
-          (`Null)
-        (of_string_exn {||})
-      )
-
   ]
 
 let tests = "all" >::: [
     preview ; characters ; basic_structures ; flow_styles ; block_styles
+    ; yaml_character_stream ; recommended_schemas
 ]
 
 if not !Sys.interactive then
