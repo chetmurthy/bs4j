@@ -8,6 +8,10 @@ all: yamltest
 yamltest: yamltest.cmo
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -linkpkg -linkall -syntax camlp5r $^ -o $@
 
+tokenizer: tokenizer.ml
+	$(OCAMLFIND) ocamlc $(DEBUG) -package sedlex.ppx -linkpkg -linkall $^ -o $@
+
+
 test:: all
 	mkdir -p _build
 	./yamltest
