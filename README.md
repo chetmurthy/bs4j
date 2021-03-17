@@ -41,7 +41,7 @@ YAML starts off saying it's just JSON, but then it proceeds to diverge
 from JSON in all sorts of ways.  Why?  What's the use, the real use,
 of:
 
-  (a) "%tags"
+  (a) %directives
   (b) type-tags
   (c) anchors
   (d) structured (non-scalar) keys in dicts
@@ -49,6 +49,26 @@ of:
   
 (a)-(d) are just not useful, and (e) should be dealt with as a
 transfer-encoding issue.  It shouldn't even *appear* in the spec.
+
+  a. maybe allowing ONE of these, before any data in the entire
+     stream, would be useful.  And the only one that is useful is
+     "%YAML version", because nothing else is really sensible.  The
+     version directive can be used by a processor to decide if it
+     supports this version of YAML.  Anything else?  Maybe it makes
+     sense to ignore it, maybe it doesn't.  So the right thing to do
+     is to forbid other kinds of directives.
+	 
+  b. type-tags: JSON has types and schema.  Reuse them.
+  
+  c. anchors: this is supposed to be a data-description language.
+	 Flat data doesn't have pointer-structure.  Ditch these.
+	 
+  d. structured (non-scalar) keys in dicts: this is nuts.  So is NULL
+	keys in dicts.  ditch them.
+
+  e. multiple transfer-encodings (UTF8, UTF16LE, BE, UTF32, etc):
+     should be dealt with as a transfer-encoding issue.  It shouldn't even
+	 *appear* in the spec.
 
 (4) Block Style Scalars
 
