@@ -8,15 +8,17 @@ all: yamltest
 yamltest: yamltest.cmo
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -linkpkg -linkall -syntax camlp5r $^ -o $@
 
-tokenizer: tokenizer.ml
-	$(OCAMLFIND) ocamlc $(DEBUG) -package sedlex.ppx -linkpkg -linkall $^ -o $@
-
-
 test:: all
 	mkdir -p _build
 	./yamltest
 
 .SUFFIXES: .mll .ml .cmo .cmx
+
+jsonparse.cmo: jsonparse.ml
+	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),sedlex,oUnit -syntax camlp5r -c $<
+
+jsontoken.cmo: jsontoken.ml
+	$(OCAMLFIND) ocamlc $(DEBUG) -package camlp5.gramlib,sedlex.ppx -c $<
 
 yamltest.cmo: yamltest.ml
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -syntax camlp5o -c $<

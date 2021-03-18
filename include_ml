@@ -6,6 +6,8 @@
 #require "bos";;
 #require "yaml";;
 #require "camlp5.pa_o";;
+#require "yojson" ;;
+#require "sedlex" ;;
 
 let lexbuf_contents lb =
   let open Lexing in
@@ -23,8 +25,14 @@ let pp_lexbuf lb =
 
 print_string "================ START ================\n";; flush stdout ;;
 
-#load "yamltest.cmo";;
-
+#load "jsontoken.cmo";;
+#load "jsonparse.cmo";;
+(*
+#trace Sedlexing.new_line ;;
+#trace Jsontoken.jsontoken ;;
+*)
+#print_length 1000;;
+#print_depth 1000;;
 (*
 ;;; Local Variables: ***
 ;;; mode:tuareg ***
