@@ -31,8 +31,8 @@ type token = Jsontoken.token =
   | STRING of string
   | RAWSTRING of string
   | YAMLSTRING of string
-  | INDENT
-  | DEDENT
+  | INDENT of int * int
+  | DEDENT of int * int
   | NEWLINE (* internal token *)
   | EOF  [@@deriving show,eq]
 type toks = token list [@@deriving show,eq]
@@ -50,8 +50,8 @@ let simple = "simple" >::: [
       )
   ; "2" >:: (fun ctxt ->
         assert_equal ~printer
-          [YAMLSTRING "a"; COLON; INDENT;
-           YAMLSTRING "null"; DEDENT; EOF]
+          [YAMLSTRING "a"; COLON; INDENT(0,2);
+           YAMLSTRING "null"; DEDENT(0,2); EOF]
           (tokens_of_string "\na:\n  null")
       )
   ; "flow" >:: (fun ctxt ->
@@ -72,14 +72,14 @@ a:
       )
   ; "rawstring" >:: (fun ctxt ->
         assert_equal ~printer
-          [(RAWSTRING {|R"a(foo)a"|}); EOF]
+          [INDENT(0,4); RAWSTRING {|R"a(foo)a"|}; DEDENT(0,4); EOF]
           (tokens_of_string {|
 R"a(foo)a"
 |})
       )
   ; "rawstring-1" >:: (fun ctxt ->
         assert_equal ~printer
-          [INDENT; RAWSTRING {|R"(foo)"|}; DEDENT; EOF]
+          [INDENT(0,5); RAWSTRING {|R"(foo)"|}; DEDENT(0,5); EOF]
           (tokens_of_string {|
   R"(foo)"
 |})

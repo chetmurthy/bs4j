@@ -125,8 +125,8 @@ type token =
   | STRING of string
   | RAWSTRING of string
   | YAMLSTRING of string
-  | INDENT
-  | DEDENT
+  | INDENT of int * int
+  | DEDENT of int * int
   | NEWLINE (* internal token *)
   | EOF
 
@@ -157,8 +157,10 @@ type t =
   let push_flow st = st.style_stack <- FLOW::st.style_stack
 
 let rec pop_styles loc rev_pushback = function
-    ((BLOCK m)::sst, n) when n < m -> pop_styles loc ((DEDENT,loc)::rev_pushback) (sst, n)
+    ((BLOCK m)::sst, n) when n < m -> pop_styles loc ((DEDENT(n,m),loc)::rev_pushback) (sst, n)
+(*
   | ((BLOCK m)::sst, n) when n = m && m > 0 -> ((DEDENT,loc)::rev_pushback, sst)
+*)
   | ((BLOCK m)::sst, n) when n = m && m = 0 ->
     assert (sst = []) ;
     (rev_pushback, [BLOCK 0])
@@ -180,7 +182,7 @@ let handle_indents_with st ((tok,(spos,epos as loc)) as t) =
     else if n > m then begin
       st.style_stack <- (BLOCK n)::st.style_stack ;
       st.pushback <- [t] ;
-      (INDENT,(spos,spos))
+      (INDENT(m,n),(spos,spos))
     end
     else (* n < m *) begin
       let (rev_pushback, new_sst) = pop_styles loc [] (st.style_stack, n) in
@@ -229,18 +231,19 @@ and rawstring3 (spos, id, acc) ofs st =
       rawstring2 (spos, id, acc) st
   | _ -> failwith "rawstring3: unexpected character"
 
-let rawstring1 (spos,id,acc) st =
+let rawstring1 (id,acc) st =
   let open St in
   let pos() = Sedlexing.lexing_positions st.lexbuf in
   let buf = st.lexbuf in
   match%sedlex buf with
   | "(" ->
+    let (_, epos) = pos() in
     Buffer.add_string acc "(" ;
-    rawstring2 (spos, id, acc) st
+    rawstring2 (epos, id, acc) st
   | _ -> failwith "rawstring1: unexpected character"
 
 
-let rawstring0 spos st =
+let rawstring0 st =
   let open St in
   let pos() = Sedlexing.lexing_positions st.lexbuf in
   let buf = st.lexbuf in
@@ -251,7 +254,7 @@ let rawstring0 spos st =
     let acc = Buffer.create 23 in
     Buffer.add_string acc "R\"" ;
     Buffer.add_string acc id ;
-    rawstring1 (spos,uni_id,acc) st
+    rawstring1 (uni_id,acc) st
   | _ -> failwith "rawstring0: unexpected character"
 
 let rec rawtoken st =
@@ -262,8 +265,7 @@ let rec rawtoken st =
   | number -> (NUMBER (Sedlexing.Latin1.lexeme buf),pos())
   | string -> (STRING (Sedlexing.Latin1.lexeme buf),pos())
   | "R\"" ->
-    let (spos,_) = pos() in
-    rawstring0 spos st
+    rawstring0 st
   | "[" -> (LBRACKET, pos())
   | "]" -> (RBRACKET, pos())
   | "{" -> (LBRACE,pos())
