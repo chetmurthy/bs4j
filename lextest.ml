@@ -70,6 +70,20 @@ a:
  ["a", "b"]
 |})
       )
+  ; "rawstring" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(RAWSTRING {|R"a(foo)a"|}); EOF]
+          (tokens_of_string {|
+R"a(foo)a"
+|})
+      )
+  ; "rawstring-1" >:: (fun ctxt ->
+        assert_equal ~printer
+          [INDENT; RAWSTRING {|R"(foo)"|}; DEDENT; EOF]
+          (tokens_of_string {|
+  R"(foo)"
+|})
+      )
   ]
 
 let tests = "all" >::: [

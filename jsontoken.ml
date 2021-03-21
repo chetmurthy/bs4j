@@ -98,6 +98,9 @@ let frac = [%sedlex.regexp? '.' , (Plus digit)]
 let exp = [%sedlex.regexp? ('e' | 'E') , (Opt ('-' | '+')) , (Plus digit)]
 let number = [%sedlex.regexp?  (Opt '-') , int , (Opt frac) , (Opt exp)]
 
+let letter = [%sedlex.regexp? 'a'..'z'|'A'..'Z']
+let ident = [%sedlex.regexp? letter, Star (letter|digit)]
+
 let unescaped = [%sedlex.regexp? 0x20 .. 0x21 | 0x23 .. 0x50 | 0x50 .. 0x10FFFF ]
 let hexdigit = [%sedlex.regexp? '0'..'9' | 'a'..'f' | 'A'..'F']
 let escaped = [%sedlex.regexp? "\\" , ( 0x22 | 0x5C | 0x2F | 0x62 | 0x66 | 0x6E | 0x72 | 0x74 | (0x75, Rep(hexdigit,4)) ) ]
@@ -193,6 +196,64 @@ let indentspaces buf =
   | Star ' ' -> String.length (Sedlexing.Latin1.lexeme buf)
   | _ -> failwith "indentspaces: should never happen"
 
+let rec rawstring2 (spos, id, acc) st =
+  let open St in
+  let pos() = Sedlexing.lexing_positions st.lexbuf in
+  let buf = st.lexbuf in
+  match%sedlex buf with
+  | Star(Compl(')')) ->
+    let txt = Sedlexing.Latin1.lexeme buf in
+    Buffer.add_string acc txt ;
+    rawstring2 (spos, id, acc) st
+  | ")" ->
+    Buffer.add_string acc ")" ;
+    rawstring3 (spos, id, acc) 0 st
+  | _ -> failwith "rawstring2: unexpected character"
+
+and rawstring3 (spos, id, acc) ofs st =
+  let open St in
+  let pos() = Sedlexing.lexing_positions st.lexbuf in
+  let buf = st.lexbuf in
+  match%sedlex buf with
+  | any ->
+    let c = Sedlexing.lexeme_char buf 0 in
+    Buffer.add_utf_8_uchar acc c ;
+    if ofs = Array.length id && c = Uchar.of_char '"' then begin
+      let (_, epos) = pos() in
+      (RAWSTRING (Buffer.contents acc), (spos, epos))
+    end
+    else if c = id.(ofs) then begin
+      rawstring3 (spos, id, acc) (ofs+1) st
+    end
+    else
+      rawstring2 (spos, id, acc) st
+  | _ -> failwith "rawstring3: unexpected character"
+
+let rawstring1 (spos,id,acc) st =
+  let open St in
+  let pos() = Sedlexing.lexing_positions st.lexbuf in
+  let buf = st.lexbuf in
+  match%sedlex buf with
+  | "(" ->
+    Buffer.add_string acc "(" ;
+    rawstring2 (spos, id, acc) st
+  | _ -> failwith "rawstring1: unexpected character"
+
+
+let rawstring0 spos st =
+  let open St in
+  let pos() = Sedlexing.lexing_positions st.lexbuf in
+  let buf = st.lexbuf in
+  match%sedlex buf with
+  | Opt ident ->
+    let uni_id = Sedlexing.lexeme buf in
+    let id = Sedlexing.Latin1.lexeme buf in
+    let acc = Buffer.create 23 in
+    Buffer.add_string acc "R\"" ;
+    Buffer.add_string acc id ;
+    rawstring1 (spos,uni_id,acc) st
+  | _ -> failwith "rawstring0: unexpected character"
+
 let rec rawtoken st =
   let open St in
   let pos() = Sedlexing.lexing_positions st.lexbuf in
@@ -200,6 +261,9 @@ let rec rawtoken st =
   match%sedlex buf with
   | number -> (NUMBER (Sedlexing.Latin1.lexeme buf),pos())
   | string -> (STRING (Sedlexing.Latin1.lexeme buf),pos())
+  | "R\"" ->
+    let (spos,_) = pos() in
+    rawstring0 spos st
   | "[" -> (LBRACKET, pos())
   | "]" -> (RBRACKET, pos())
   | "{" -> (LBRACE,pos())
