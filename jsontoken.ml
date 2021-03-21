@@ -228,9 +228,9 @@ let rec jsontoken st =
   | { pushback = [] ; at_bol = false ; style_stack = (BLOCK _) :: _ ; _ } -> begin
       match rawtoken st with
         (RBRACKET, _) -> failwith "jsontoken: ']' found in block style"
-      | (LBRACKET, _) as t -> St.push_flow st ; handle_indents_with st t
+      | (LBRACKET, _) as t -> St.push_flow st ; t
       | (RBRACE, _) -> failwith "jsontoken: '}' found in block style"
-      | (LBRACE, _) as t -> St.push_flow st ; handle_indents_with st t
+      | (LBRACE, _) as t -> St.push_flow st ; t
       | (COLON, _) as t -> t
       | (NEWLINE, _) -> St.set_bol st true ; jsontoken st
       | t -> handle_indents_with st t

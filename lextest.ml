@@ -54,6 +54,22 @@ let simple = "simple" >::: [
            RAWSTRING "null"; DEDENT; EOF]
           (tokens_of_string "\na:\n  null")
       )
+  ; "flow" >:: (fun ctxt ->
+        assert_equal ~printer
+          [LBRACKET; (STRING "\"a\""); COMMA;
+           (STRING "\"b\""); RBRACKET; EOF]
+          (tokens_of_string {|["a", "b"]|})
+      )
+  ; "flow" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(RAWSTRING "a"); COLON; LBRACKET;
+           (STRING "\"a\""); COMMA; (STRING "\"b\"");
+           RBRACKET; EOF]
+          (tokens_of_string {|
+a:
+ ["a", "b"]
+|})
+      )
   ]
 
 let tests = "all" >::: [
