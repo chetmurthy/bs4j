@@ -45,13 +45,13 @@ let tokens_of_string s =
 let simple = "simple" >::: [
     "simple" >:: (fun ctxt ->
         assert_equal ~printer
-          [RAWSTRING "a"; EOF]
+          [YAMLSTRING "a"; EOF]
           (tokens_of_string {|a|})
       )
   ; "2" >:: (fun ctxt ->
         assert_equal ~printer
-          [RAWSTRING "a"; COLON; INDENT;
-           RAWSTRING "null"; DEDENT; EOF]
+          [YAMLSTRING "a"; COLON; INDENT;
+           YAMLSTRING "null"; DEDENT; EOF]
           (tokens_of_string "\na:\n  null")
       )
   ; "flow" >:: (fun ctxt ->
@@ -62,7 +62,7 @@ let simple = "simple" >::: [
       )
   ; "flow" >:: (fun ctxt ->
         assert_equal ~printer
-          [(RAWSTRING "a"); COLON; LBRACKET;
+          [(YAMLSTRING "a"); COLON; LBRACKET;
            (STRING "\"a\""); COMMA; (STRING "\"b\"");
            RBRACKET; EOF]
           (tokens_of_string {|

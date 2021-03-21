@@ -209,7 +209,7 @@ let rec rawtoken st =
   | "-" -> (DASH,pos())
   | Star linews -> rawtoken st
   | '\n' -> (NEWLINE,pos())
-  | yamlscalar -> (RAWSTRING (Sedlexing.Latin1.lexeme buf), pos())
+  | yamlscalar -> (YAMLSTRING (Sedlexing.Latin1.lexeme buf), pos())
   | eof -> (EOF,pos())
   | _ -> failwith "Unexpected character"
 
