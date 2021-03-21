@@ -1,6 +1,7 @@
 *.cm*
 *.o
 yamltest
+lextest
 *.opt
 yamllexer.ml
 _build

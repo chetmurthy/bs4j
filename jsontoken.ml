@@ -104,6 +104,12 @@ let escaped = [%sedlex.regexp? "\\" , ( 0x22 | 0x5C | 0x2F | 0x62 | 0x66 | 0x6E 
 let char = [%sedlex.regexp? (unescaped | escaped ) ]
 let string = [%sedlex.regexp?  '"' , (Star char) , '"']
 
+let yamlscalar_char = [%sedlex.regexp? Compl (Chars "-[]():,#\"\r\n") ]
+let yamlscalar_endchar = [%sedlex.regexp? Opt (Sub (yamlscalar_char, linews)) ]
+let yamlscalar = [%sedlex.regexp?  yamlscalar_endchar, Opt (Star yamlscalar_char, yamlscalar_char) ]
+
+let comment = [%sedlex.regexp? '#' , Star(Compl '\n') ]
+
 type token =
   | LBRACKET
   | RBRACKET
@@ -111,31 +117,134 @@ type token =
   | RBRACE
   | COLON
   | COMMA
-  | KWFALSE
-  | KWTRUE
-  | KWNULL
+  | DASH
   | NUMBER of string
   | STRING of string
+  | RAWSTRING of string
+  | YAMLSTRING of string
+  | INDENT
+  | DEDENT
+  | NEWLINE (* internal token *)
   | EOF
 
-let rec jsontoken buf =
-  let pos() = Sedlexing.lexing_positions buf in
+type style_t =
+    BLOCK of int
+  | FLOW
+
+module St = struct
+type t =
+  {
+    lexbuf : Sedlexing.lexbuf
+  ; mutable style_stack : style_t list
+  ; mutable at_bol : bool
+  ; mutable pushback : (token * (Lexing.position * Lexing.position)) list
+  }
+  let mk lexbuf = {
+    lexbuf
+  ; style_stack = [BLOCK 0]
+  ; at_bol = true
+  ; pushback = []
+  }
+  let set_bol st b = st.at_bol <- b
+  let pop_flow st =
+    match st with
+      { style_stack = FLOW :: sst ; _ } -> st.style_stack <- sst
+    | _ -> failwith "pop_flow: internal error"
+
+  let push_flow st = st.style_stack <- FLOW::st.style_stack
+
+let rec pop_styles loc rev_pushback = function
+    ((BLOCK m)::sst, n) when n < m -> pop_styles loc ((DEDENT,loc)::rev_pushback) (sst, n)
+  | ((BLOCK m)::sst, n) when n = m && m > 0 -> ((DEDENT,loc)::rev_pushback, sst)
+  | ((BLOCK m)::sst, n) when n = m && m = 0 ->
+    assert (sst = []) ;
+    (rev_pushback, [BLOCK 0])
+  | _ -> failwith "pop_styles: dedent did not move back to previous indent position"
+
+let extract_indent_position = function
+    (EOF, _) -> 0
+  | (_, ({Lexing.pos_bol; pos_cnum; _}, _)) ->
+    pos_cnum - pos_bol
+
+let handle_indents_with st ((tok,(spos,epos as loc)) as t) =
+  assert (st.pushback = []) ;
+  match st.style_stack with
+    (BLOCK m)::_ ->
+    let n = extract_indent_position t in
+    if n = m then begin
+      t
+    end
+    else if n > m then begin
+      st.style_stack <- (BLOCK n)::st.style_stack ;
+      st.pushback <- [t] ;
+      (INDENT,(spos,spos))
+    end
+    else (* n < m *) begin
+      let (rev_pushback, new_sst) = pop_styles loc [] (st.style_stack, n) in
+      let new_pushback = (List.rev rev_pushback)@[t] in
+      st.pushback <- List.tl new_pushback ;
+      st.style_stack <- new_sst ;
+      List.hd new_pushback
+    end
+end
+
+let indentspaces buf =
   match%sedlex buf with
+  | Star ' ' -> String.length (Sedlexing.Latin1.lexeme buf)
+  | _ -> failwith "indentspaces: should never happen"
+
+let rec rawtoken st =
+  let open St in
+  let pos() = Sedlexing.lexing_positions st.lexbuf in
+  let buf = st.lexbuf in
+  match%sedlex buf with
+  | number -> (NUMBER (Sedlexing.Latin1.lexeme buf),pos())
+  | string -> (STRING (Sedlexing.Latin1.lexeme buf),pos())
   | "[" -> (LBRACKET, pos())
-  | "]" -> (RBRACKET,pos())
+  | "]" -> (RBRACKET, pos())
   | "{" -> (LBRACE,pos())
   | "}" -> (RBRACE,pos())
   | ":" -> (COLON,pos())
   | "," -> (COMMA,pos())
-  | linews -> jsontoken buf
-  | '\n' -> jsontoken buf
-  | "false" -> (KWFALSE,pos())
-  | "true" -> (KWTRUE,pos())
-  | "null" -> (KWNULL,pos())
-  | number -> (NUMBER (Sedlexing.Latin1.lexeme buf),pos())
-  | string -> (STRING (Sedlexing.Latin1.lexeme buf),pos())
+  | "-" -> (DASH,pos())
+  | Star linews -> rawtoken st
+  | '\n' -> (NEWLINE,pos())
+  | yamlscalar -> (RAWSTRING (Sedlexing.Latin1.lexeme buf), pos())
   | eof -> (EOF,pos())
   | _ -> failwith "Unexpected character"
+
+
+let rec jsontoken st =
+  let open St in
+  match st with
+    { pushback = h::t ; _ } ->
+    st.pushback <- t ;
+    h
+  | { pushback = [] ; at_bol = true ; style_stack = (BLOCK _) :: _ ; _ } ->
+    ignore(indentspaces st.lexbuf) ;
+    St.set_bol st false ;
+    jsontoken st
+
+  | { pushback = [] ; at_bol = false ; style_stack = (BLOCK _) :: _ ; _ } -> begin
+      match rawtoken st with
+        (RBRACKET, _) -> failwith "jsontoken: ']' found in block style"
+      | (LBRACKET, _) as t -> St.push_flow st ; handle_indents_with st t
+      | (RBRACE, _) -> failwith "jsontoken: '}' found in block style"
+      | (LBRACE, _) as t -> St.push_flow st ; handle_indents_with st t
+      | (COLON, _) as t -> t
+      | (NEWLINE, _) -> St.set_bol st true ; jsontoken st
+      | t -> handle_indents_with st t
+  end
+
+  | { pushback = [] ; at_bol = false ; style_stack = FLOW :: _ ; _ } -> begin
+      match rawtoken st with
+        (RBRACKET, _) as t -> St.pop_flow st ; t
+      | (LBRACKET, _) as t -> St.push_flow st ; t
+      | (RBRACE, _) as t -> St. pop_flow st ; t
+      | (LBRACE, _) as t -> St.push_flow st ; t
+      | (NEWLINE, _) -> St.set_bol st true ; jsontoken st
+      | t -> t
+    end
 
 let gen_of_string s =
   let pos = ref 0 in
@@ -146,9 +255,9 @@ let gen_of_string s =
       Some c
 
 let lex_string f s =
-  let lexbuf = Sedlexing.Latin1.from_gen (gen_of_string s) in
+  let st = St.mk (Sedlexing.Latin1.from_gen (gen_of_string s)) in
   let rec lexrec acc =
-    match jsontoken lexbuf with
+    match jsontoken st with
       (EOF,_) as t -> List.rev (t::acc)
     | t -> lexrec (t::acc)
   in lexrec []

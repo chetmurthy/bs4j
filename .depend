@@ -1,0 +1,6 @@
+lextest.cmo : \
+    jsontoken.cmo
+lextest.cmx : \
+    jsontoken.cmx
+yamltest.cmo :
+yamltest.cmx :

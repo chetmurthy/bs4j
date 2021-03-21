@@ -15,9 +15,13 @@ value compatible_lexer lb =
   | RBRACE -> ("","}")
   | COLON -> ("",":")
   | COMMA -> ("",",")
-  | KWFALSE -> ("","false")
-  | KWTRUE -> ("","true")
-  | KWNULL -> ("","null")
+  | DASH -> ("","-")
+  | RAWSTRING "false" -> ("","false")
+  | RAWSTRING "true" -> ("","true")
+  | RAWSTRING "null" -> ("","null")
+  | RAWSTRING s -> ("RAWSTRING",s)
+  | INDENT -> ("INDENT","")
+  | DEDENT -> ("DEDENT","")
   | NUMBER s -> ("NUMBER",s)
   | STRING s -> ("STRING",s)
   | EOF -> ("EOI","")
@@ -33,16 +37,16 @@ value input_file = ref "" ;
 value nonws_re = Pcre.regexp "\\S" ;
 value has_nonws s = Pcre.pmatch ~{rex=nonws_re} s;
 
-value lexer_func_of_sedlex_located lexfun cs =
+value lexer_func_of_sedlex_state_located lexfun cs =
   let read1 () =
     try Some (Stream.next cs) with [ Stream.Failure -> None ] in
-  let lb = Sedlexing.Latin1.from_gen read1
+  let lb = St.mk (Sedlexing.Latin1.from_gen read1)
   in
   let next_token_func () = lexfun lb in
   Plexing.make_stream_and_location next_token_func
 ;
 
-value lexer = lexer_func_of_sedlex_located compatible_lexer ;
+value lexer = lexer_func_of_sedlex_state_located compatible_lexer ;
 value lexer = {Plexing.tok_func = lexer;
  Plexing.tok_using _ = (); Plexing.tok_removing _ = ();
  Plexing.tok_match = Plexing.default_match;
