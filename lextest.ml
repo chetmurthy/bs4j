@@ -73,12 +73,39 @@ a:
   ; "indents" >:: (fun ctxt ->
         assert_equal ~printer
           [YAMLSTRING "a"; COLON; INDENT (0, 1);
-           YAMLSTRING "b"; COLON; INDENT (1, 3);
-           YAMLSTRING " c"; DEDENT (1, 3);
+           YAMLSTRING "b"; COLON; INDENT (1, 4);
+           YAMLSTRING "c"; DEDENT (1, 4);
            DEDENT (0, 1); EOF]
           (tokens_of_string {|
 a:
  b: c
+|})
+      )
+  ; "indents-2" >:: (fun ctxt ->
+        assert_equal ~printer
+          [YAMLSTRING "a"; COLON; INDENT (0, 1);
+           YAMLSTRING "b"; COLON; INDENT (1, 4);
+           YAMLSTRING "c"; DEDENT (1, 4);
+           YAMLSTRING "d"; COLON; INDENT (1, 4);
+           YAMLSTRING "e"; DEDENT (1, 4);
+           DEDENT (0, 1); EOF]
+          (tokens_of_string {|
+a:
+ b: c
+ d: e
+|})
+      )
+  ; "indents-3" >:: (fun ctxt ->
+        assert_equal ~printer
+          [YAMLSTRING "a"; COLON; INDENT (0, 1);
+           DASH; INDENT (1, 3); YAMLSTRING "b";
+           DEDENT (1, 3); DASH; INDENT (1, 3);
+           YAMLSTRING "d"; DEDENT (1, 3);
+           DEDENT (0, 1); EOF]
+          (tokens_of_string {|
+a:
+ - b
+ - d
 |})
       )
   ; "rawstring" >:: (fun ctxt ->

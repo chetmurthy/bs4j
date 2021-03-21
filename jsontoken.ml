@@ -108,7 +108,7 @@ let char = [%sedlex.regexp? (unescaped | escaped ) ]
 let string = [%sedlex.regexp?  '"' , (Star char) , '"']
 
 let yamlscalar_char = [%sedlex.regexp? Compl (Chars "-[]():,#\"\r\n") ]
-let yamlscalar_endchar = [%sedlex.regexp? Opt (Sub (yamlscalar_char, linews)) ]
+let yamlscalar_endchar = [%sedlex.regexp? Sub (yamlscalar_char, linews) ]
 let yamlscalar = [%sedlex.regexp?  yamlscalar_endchar, Opt (Star yamlscalar_char, yamlscalar_char) ]
 
 let comment = [%sedlex.regexp? '#' , Star(Compl '\n') ]
@@ -159,9 +159,9 @@ type t =
 let rec pop_styles loc rev_pushback = function
     ((BLOCK m)::(BLOCK m')::sst, n) when n < m -> pop_styles loc ((DEDENT(m',m),loc)::rev_pushback) ((BLOCK m')::sst, n)
   | ((BLOCK m)::sst, n) when n < m -> pop_styles loc ((DEDENT(n,m),loc)::rev_pushback) (sst, n)
-(*
-  | ((BLOCK m)::sst, n) when n = m && m > 0 -> ((DEDENT,loc)::rev_pushback, sst)
-*)
+
+  | ((BLOCK m)::sst, n) when n = m && m > 0 -> (rev_pushback, (BLOCK m)::sst)
+
   | ((BLOCK m)::sst, n) when n = m && m = 0 ->
     assert (sst = []) ;
     (rev_pushback, [BLOCK 0])

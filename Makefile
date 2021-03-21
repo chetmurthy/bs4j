@@ -3,7 +3,9 @@ OCAMLFIND=ocamlfind
 NOT_OCAMLFIND=not-ocamlfind
 PACKAGES=fmt,camlp5.extprint,camlp5.extend,camlp5.pprintf,pcre,yaml,pa_ppx.deriving_plugins.std,pa_ppx.testutils,sedlex
 
-all: yamltest lextest
+OBJ=jsontoken.cmo jsonparse.cmo
+
+all: $(OBJ) yamltest lextest
 
 yamltest: yamltest.cmo
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -linkpkg -linkall -syntax camlp5r $^ -o $@
