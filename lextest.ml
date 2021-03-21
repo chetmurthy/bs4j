@@ -70,6 +70,17 @@ a:
  ["a", "b"]
 |})
       )
+  ; "indents" >:: (fun ctxt ->
+        assert_equal ~printer
+          [YAMLSTRING "a"; COLON; INDENT (0, 1);
+           YAMLSTRING "b"; COLON; INDENT (1, 3);
+           YAMLSTRING " c"; DEDENT (1, 3);
+           DEDENT (0, 1); EOF]
+          (tokens_of_string {|
+a:
+ b: c
+|})
+      )
   ; "rawstring" >:: (fun ctxt ->
         assert_equal ~printer
           [INDENT(0,4); RAWSTRING {|R"a(foo)a"|}; DEDENT(0,4); EOF]

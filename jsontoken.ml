@@ -157,7 +157,8 @@ type t =
   let push_flow st = st.style_stack <- FLOW::st.style_stack
 
 let rec pop_styles loc rev_pushback = function
-    ((BLOCK m)::sst, n) when n < m -> pop_styles loc ((DEDENT(n,m),loc)::rev_pushback) (sst, n)
+    ((BLOCK m)::(BLOCK m')::sst, n) when n < m -> pop_styles loc ((DEDENT(m',m),loc)::rev_pushback) ((BLOCK m')::sst, n)
+  | ((BLOCK m)::sst, n) when n < m -> pop_styles loc ((DEDENT(n,m),loc)::rev_pushback) (sst, n)
 (*
   | ((BLOCK m)::sst, n) when n = m && m > 0 -> ((DEDENT,loc)::rev_pushback, sst)
 *)
