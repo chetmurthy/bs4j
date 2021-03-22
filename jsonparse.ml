@@ -54,30 +54,29 @@ value lexer = {Plexing.tok_func = lexer;
  Plexing.tok_text = Plexing.lexer_text;
  Plexing.tok_comm = None} ;
 
-type json = [
-    Null
-  | Bool of bool
-  | Number of string
-  | String of string
-  | Arr of list json
-  | Obj of list (string * json)
-]
+type _value =
+  [= `A of list _value
+  | `Bool of bool
+  | `Float of (float [@equal fun x y -> 0 = compare x y;])
+  | `Null
+  | `O of list (string * _value)
+  | `String of string ] [@@deriving (show,eq);]
 ;
 
 value g = Grammar.gcreate lexer;
-value json = Grammar.Entry.create g "json";
+value (json : Grammar.Entry.e _value) = Grammar.Entry.create g "json";
 value json_eoi = Grammar.Entry.create g "json_eoi";
 
 EXTEND
   GLOBAL: json json_eoi ;
   json:
-    [ [ "null" -> Null
-      | "true" -> Bool True
-      | "false" -> Bool False
-      | n=NUMBER -> Number n
-      | s=STRING -> String s
-      | "[" ; l = LIST0 json SEP "," ; "]" -> Arr l
-      | "{" ; l = LIST0 [ s=STRING ; ":" ; v=json -> (s,v) ] SEP "," ; "}" -> Obj l
+    [ [ "null" -> `Null
+      | "true" -> `Bool True
+      | "false" -> `Bool False
+      | n=NUMBER -> `Float (float_of_string n)
+      | s=STRING -> `String s
+      | "[" ; l = LIST0 json SEP "," ; "]" -> `A l
+      | "{" ; l = LIST0 [ s=STRING ; ":" ; v=json -> (s,v) ] SEP "," ; "}" -> `O l
     ] ]
   ;
 
