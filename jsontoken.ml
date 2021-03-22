@@ -108,16 +108,46 @@ let number = [%sedlex.regexp?  (Opt '-') , int , (Opt frac) , (Opt exp)]
 
 let letter = [%sedlex.regexp? 'a'..'z'|'A'..'Z']
 let ident = [%sedlex.regexp? letter, Star (letter|digit)]
-
-let unescaped = [%sedlex.regexp? 0x20 .. 0x21 | 0x23 .. 0x5B | 0x5D .. 0x10FFFF ]
 let hexdigit = [%sedlex.regexp? '0'..'9' | 'a'..'f' | 'A'..'F']
-let escaped = [%sedlex.regexp? "\\" , ( 0x22 | 0x5C | 0x2F | 0x62 | 0x66 | 0x6E | 0x72 | 0x74 | (0x75, Rep(hexdigit,4)) ) ]
-let char = [%sedlex.regexp? (unescaped | escaped ) ]
-let string = [%sedlex.regexp?  '"' , (Star char) , '"']
+
+let json_unescaped = [%sedlex.regexp? 0x20 .. 0x21 | 0x23 .. 0x5B | 0x5D .. 0x10FFFF ]
+let json_escaped = [%sedlex.regexp? "\\" , ( 0x22 | 0x5C | 0x2F | 0x62 | 0x66 | 0x6E | 0x72 | 0x74 | (0x75, Rep(hexdigit,4)) ) ]
+let json_string_char = [%sedlex.regexp? (json_unescaped | json_escaped ) ]
+let json_string = [%sedlex.regexp?  '"' , (Star json_string_char) , '"']
 
 let yamlscalar_char = [%sedlex.regexp? Compl (Chars "-[]{}:,#\\\"\r\n") ]
 let yamlscalar_endchar = [%sedlex.regexp? Sub (yamlscalar_char, linews) ]
 let yamlscalar = [%sedlex.regexp?  yamlscalar_endchar, Opt (Star yamlscalar_char, yamlscalar_endchar) ]
+
+let yaml_basic_string_char = [%sedlex.regexp? 0x9 | 0x20 .. 0x10ffff ]
+let yaml_unescaped_sqstring_char = [%sedlex.regexp? Sub(yaml_basic_string_char, '\'')  ]
+let yaml_sqstring = [%sedlex.regexp?  "Y'" , (Star (yaml_unescaped_sqstring_char | "''")) , "'" ]
+
+let yaml_basic_dqstring_char = [%sedlex.regexp? Sub(yaml_basic_string_char, ('"' | "\\")) ]
+let yaml_dqstring_escaped_char = [%sedlex.regexp? "\\",
+                                         ( "0" (* ns-esc-null *)
+                                         | "a" (* ns-esc-bell *)
+                                         | "b" (* ns-esc-backspace *)
+                                         | "t" | "\t" (* ns-esc-horizontal-tab *)
+                                         | "n" (* ns-esc-line-feed *)
+                                         | "v" (* ns-esc-vertical-tab *)
+                                         | "f" (* ns-esc-form-feed *)
+                                         | "r" (* ns-esc-carriage-return *)
+                                         | "e" (* ns-esc-escape *)
+                                         | ' ' (* ns-esc-space *)
+                                         | '\"' (* ns-esc-double-quote *)
+                                         | '/' (* ns-esc-slash *)
+                                         | '\\' (* ns-esc-backslash *)
+                                         | 'N' (* ns-esc-next-line *)
+                                         | '_' (*ns-esc-non-breaking-space *)
+                                         | "L" (* ns-esc-line-separator *)
+                                         | "P" (* ns-esc-paragraph-separator *)
+                                         | ( "x" , Rep(hexdigit,2)) (* ns-esc-8-bit *)
+                                         | ( "u" , Rep(hexdigit,4)) (* ns-esc-16-bit *)
+                                         | ( "U" , Rep(hexdigit,8)) (* ns-esc-32-bit *) ) ]
+let yaml_dqstring_linebreak = [%sedlex.regexp? "\\", "\n", Star(' '), Opt("\\") ]
+let yaml_dqstring_char = [%sedlex.regexp? (yaml_basic_dqstring_char | yaml_dqstring_escaped_char ) ]
+let yaml_dqstring = [%sedlex.regexp? "Y\"" , (Star (yaml_dqstring_char | yaml_dqstring_linebreak)), '"' ]
 
 let comment = [%sedlex.regexp? '#' , Star(Compl '\n') ]
 
@@ -130,7 +160,7 @@ let unquote_string s =
     | _ -> failwith "unquote_string: unexpected character"
   and unrec1 () =
     match%sedlex lb with
-      Plus unescaped ->
+      Plus json_unescaped ->
       Buffer.add_string buf (Sedlexing.Latin1.lexeme lb) ;
       unrec1 ()
     | "\\", '"' -> Buffer.add_char buf '"' ; unrec1 ()
@@ -150,6 +180,77 @@ let unquote_string s =
       Buffer.contents buf
 
     | _ -> failwith "unquote_string: internal error"
+  in unrec0 ()
+
+let lex_re lb =
+  match%sedlex lb with
+    Plus yaml_unescaped_sqstring_char -> Sedlexing.Latin1.lexeme lb
+  | _ -> failwith "lex_re: failed"
+
+let unquote_yaml_sqstring s =
+  let buf = Buffer.create (String.length s) in
+  let lb = Sedlexing.Latin1.from_gen (gen_of_string s) in
+  let rec unrec0 () =
+    match%sedlex lb with
+    | "Y'" -> unrec1 ()
+    | _ -> failwith "unquote_sqstring: unexpected character"
+  and unrec1 () =
+    match%sedlex lb with
+    | Plus yaml_unescaped_sqstring_char -> 
+      Buffer.add_string buf (Sedlexing.Latin1.lexeme lb) ;
+      unrec1 ()
+    | "''" ->
+      Buffer.add_char buf '\'' ;
+      unrec1 ()
+    | "'" -> Buffer.contents buf
+    | _ -> failwith "unquote_sqstring: internal error"
+  in unrec0 ()
+
+let unquote_yaml_dqstring s =
+  let buf = Buffer.create (String.length s) in
+  let lb = Sedlexing.Latin1.from_gen (gen_of_string s) in
+  let rec unrec0 () =
+    match%sedlex lb with
+    | "Y\"" -> unrec1 ()
+    | _ -> failwith "unquote_dqstring: unexpected character"
+  and unrec1 () =
+    match%sedlex lb with
+    | Plus yaml_basic_dqstring_char ->
+      Buffer.add_string buf (Sedlexing.Latin1.lexeme lb) ;
+      unrec1 ()
+        
+    | "\\", "0" (* ns-esc-null *) -> Buffer.add_char buf '\x00' ; unrec1 ()
+    | "\\", "a" (* ns-esc-bell *) -> Buffer.add_char buf '\x07' ; unrec1 ()
+    | "\\", "b" (* ns-esc-backspace *) -> Buffer.add_char buf '\b' ; unrec1 ()
+    |  "\\", ("t" | "\t") (* ns-esc-horizontal-tab *) -> Buffer.add_char buf '\t' ; unrec1 ()
+    | "\\", "n" (* ns-esc-line-feed *) -> Buffer.add_char buf '\n' ; unrec1 ()
+    | "\\", "v" (* ns-esc-vertical-tab *) -> Buffer.add_char buf '\x0b' ; unrec1 ()
+    | "\\", "f" (* ns-esc-form-feed *) -> Buffer.add_char buf '\x0c' ; unrec1 ()
+    | "\\", "r" (* ns-esc-carriage-return *) -> Buffer.add_char buf '\r' ; unrec1 ()
+    | "\\", "e" (* ns-esc-escape *) -> Buffer.add_char buf '\x1b' ; unrec1 ()
+    | "\\", ' ' (* ns-esc-space *) -> Buffer.add_char buf ' ' ; unrec1 ()
+    | "\\", '\"' (* ns-esc-double-quote *) -> Buffer.add_char buf '"' ; unrec1 ()
+    | "\\", '/' (* ns-esc-slash *) -> Buffer.add_char buf '/' ; unrec1 ()
+    | "\\", '\\' (* ns-esc-backslash *) -> Buffer.add_char buf '\\' ; unrec1 ()
+    | "\\", 'N' (* ns-esc-next-line *) -> Buffer.add_char buf '\x85' ; unrec1 ()
+    | "\\", '_' (*ns-esc-non-breaking-space *) -> Buffer.add_char buf '\xa0' ; unrec1 ()
+    | "\\", "L" (* ns-esc-line-separator *) -> Buffer.add_utf_8_uchar buf (Uchar.of_int 0x2028) ; unrec1 ()
+    | "\\", "P" (* ns-esc-paragraph-separator *) -> Buffer.add_utf_8_uchar buf (Uchar.of_int 0x2029) ; unrec1 ()
+    | "\\", ( "x" , Rep(hexdigit,2)) (* ns-esc-8-bit *) ->
+      let n = int_of_string ("0x"^(String.sub (Sedlexing.Latin1.lexeme lb) 2 2)) in
+      Buffer.add_utf_8_uchar buf (Uchar.of_int n) ; unrec1 ()
+    | "\\", ( "u" , Rep(hexdigit,4)) (* ns-esc-16-bit *) ->
+      let n = int_of_string ("0x"^(String.sub (Sedlexing.Latin1.lexeme lb) 2 4)) in
+      Buffer.add_utf_8_uchar buf (Uchar.of_int n) ; unrec1 ()
+
+    | "\\", ( "U" , Rep(hexdigit,8)) (* ns-esc-32-bit *) ->
+      let n = int_of_string ("0x"^(String.sub (Sedlexing.Latin1.lexeme lb) 2 8)) in
+      Buffer.add_utf_8_uchar buf (Uchar.of_int n) ; unrec1 ()
+
+    | yaml_dqstring_linebreak ->
+      unrec1 ()
+    | '"' -> Buffer.contents buf
+    | _ -> failwith "unquote_dqstring: unexpected character"
   in unrec0 ()
 
 let indented n s =
@@ -249,6 +350,8 @@ type token =
   | STRING of string
   | RAWSTRING of string
   | YAMLSTRING of string
+  | YAMLSQSTRING of string
+  | YAMLDQSTRING of string
   | INDENT of int * int
   | DEDENT of int * int
   | NEWLINE (* internal token *)
@@ -388,7 +491,9 @@ let rec rawtoken st =
   let buf = st.lexbuf in
   match%sedlex buf with
   | number -> (NUMBER (Sedlexing.Latin1.lexeme buf),pos())
-  | string -> (STRING (Sedlexing.Latin1.lexeme buf),pos())
+  | json_string -> (STRING (Sedlexing.Latin1.lexeme buf),pos())
+  | yaml_sqstring -> (YAMLSQSTRING (Sedlexing.Latin1.lexeme buf),pos())
+  | yaml_dqstring -> (YAMLDQSTRING (Sedlexing.Latin1.lexeme buf),pos())
   | "R\"" ->
     rawstring0 st
   | "[" -> (LBRACKET, pos())
@@ -431,6 +536,8 @@ let rec jsontoken st =
       | (LBRACE, _) as t -> St.push_flow st ; t
       | (COLON, _) as t -> t
       | (RAWSTRING _, _) as t -> t
+      | (YAMLSQSTRING _, _) as t -> t
+      | (YAMLDQSTRING _, _) as t -> t
       | (NEWLINE, _) -> St.set_bol st true ; jsontoken st
       | t -> handle_indents_with st t
   end
@@ -445,10 +552,14 @@ let rec jsontoken st =
       | t -> t
     end
 
-let lex_string f s =
+let lex_string s =
   let st = St.mk (Sedlexing.Latin1.from_gen (gen_of_string s)) in
   let rec lexrec acc =
     match jsontoken st with
       (EOF,_) as t -> List.rev (t::acc)
     | t -> lexrec (t::acc)
   in lexrec []
+
+let lex1 f s =
+  let lb = Sedlexing.Latin1.from_gen (gen_of_string s) in
+  f lb

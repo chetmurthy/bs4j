@@ -25,6 +25,8 @@ value compatible_lexer lb =
   | YAMLSTRING "true" -> ("","true")
   | YAMLSTRING "null" -> ("","null")
   | YAMLSTRING s -> ("YAMLSTRING",s)
+  | YAMLSQSTRING s -> ("YAMLSQSTRING",s)
+  | YAMLDQSTRING s -> ("YAMLDQSTRING",s)
   | RAWSTRING s ->
     ("RAWSTRING",s)
   | INDENT _ _ -> ("INDENT","")
@@ -116,7 +118,7 @@ EXTEND
         -> `A [v :: l]
 
       | "[" ; l = LIST0 json SEP "," ; "]" -> `A l
-      | "{" ; l = LIST0 [ s=[ s=STRING -> unquote_string s | s=YAMLSTRING -> s ] ; ":" ; v=json -> (s,v) ] SEP "," ; "}" -> `O l
+      | "{" ; l = LIST0 [ s= string_scalar ; ":" ; v=json -> (s,v) ] SEP "," ; "}" -> `O l
       | INDENT ; s=scalar ; DEDENT -> s
       | INDENT ; s=scalar ; ":" ; v=json ;
         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ;
@@ -128,6 +130,14 @@ EXTEND
     ] ]
   ;
 
+  string_scalar:
+   [ [ s=STRING -> unquote_string s
+     | s=YAMLSTRING -> s
+     | s=YAMLSQSTRING -> unquote_yaml_sqstring s
+     | s=YAMLDQSTRING -> unquote_yaml_dqstring s
+     ] ]
+  ;
+
   scalar:
     [ [ s = RAWSTRING ->
         let indent = Ploc.first_pos loc - Ploc.bol_pos loc in
@@ -137,6 +147,8 @@ EXTEND
         `String (unquote_rawstring ~{fold=True} indent s)
       | l = LIST1 [ s = YAMLSTRING -> s ] -> `String (String.concat " " l)
       | s = STRING -> `String (unquote_string s)
+      | s=YAMLSQSTRING -> `String (unquote_yaml_sqstring s)
+      | s=YAMLDQSTRING -> `String (unquote_yaml_dqstring s)
       | n = NUMBER -> `Float (float_of_string n)
       | "null" -> `Null
       | "true" -> `Bool True

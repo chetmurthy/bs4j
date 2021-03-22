@@ -36,6 +36,8 @@ type token = Jsontoken.token =
   | STRING of string
   | RAWSTRING of string
   | YAMLSTRING of string
+  | YAMLSQSTRING of string
+  | YAMLDQSTRING of string
   | INDENT of int * int
   | DEDENT of int * int
   | NEWLINE (* internal token *)
@@ -45,7 +47,7 @@ type toks = token list [@@deriving show,eq]
 let printer = show_toks
 
 let tokens_of_string s =
-  List.map fst (lex_string jsontoken s)
+  List.map fst (lex_string s)
 
 let lexing = "lexing" >::: [
     "simple" >:: (fun ctxt ->
@@ -215,6 +217,47 @@ hr:  65    # Home runs
           [(YAMLSTRING "a"); COLON; (INDENT (0, 3));
            (YAMLSTRING "b c"); (DEDENT (0, 3)); EOF]
           (tokens_of_string {|a: b c|})
+      )
+  ; "dqstring-1" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(YAMLSTRING "unicode"); COLON;
+           (YAMLDQSTRING "Y\"Sosa did fine.\\u263A\"");
+           EOF]
+          (tokens_of_string {|unicode: Y"Sosa did fine.\u263A"|})
+      )
+  ; "dstring-2" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(YAMLSTRING "control"); COLON;
+           (YAMLDQSTRING "Y\"\\b1998\\t1999\\t2000\\n\"");
+           EOF]
+          (tokens_of_string {|control: Y"\b1998\t1999\t2000\n"|})
+      )
+  ; "dqstring-3" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(YAMLSTRING "hex esc"); COLON;
+           (YAMLDQSTRING "Y\"\\x0d\\x0a is \\r\\n\"");
+           EOF]
+          (tokens_of_string {|hex esc: Y"\x0d\x0a is \r\n"|})
+      )
+  ; "sqstring-1" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(YAMLSTRING "single"); COLON;
+           (YAMLSQSTRING "Y'\"Howdy!\" he cried.'");
+           EOF]
+          (tokens_of_string {|single: Y'"Howdy!" he cried.'|})
+      )
+  ; "sqstring-2" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(YAMLSTRING "quoted"); COLON; 
+           (YAMLSQSTRING "Y' # Not a ''comment''.'");
+           EOF]
+          (tokens_of_string {|quoted: Y' # Not a ''comment''.'|})
+      )
+  ; "sqstring-3" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(YAMLSQSTRING "Y'tie-fighter'"); COLON;
+           (YAMLSQSTRING "Y'|\\-*-/|'"); EOF]
+          (tokens_of_string {|Y'tie-fighter': Y'|\-*-/|'|})
       )
   ]
 
@@ -569,13 +612,13 @@ stats:
              ("quoted", `String (" # Not a 'comment'."));
              ("tie-fighter", `String ("|\\-*-/|"))]
           ))
-        (of_string_exn {|unicode: "Sosa did fine.\u263A"
-control: "\b1998\t1999\t2000\n"
-hex esc: "\u000d\u000a is \r\n"
+        (of_string_exn {|unicode: Y"Sosa did fine.\u263A"
+control: Y"\b1998\t1999\t2000\n"
+hex esc: Y"\x0d\x0a is \r\n"
 
-single: R"("Howdy!" he cried.)"
-quoted: R"( # Not a 'comment'.)"
-"tie-fighter": R"(|\-*-/|)"|})
+single: Y'"Howdy!" he cried.'
+quoted: Y' # Not a ''comment''.'
+Y'tie-fighter': Y'|\-*-/|'|})
       )
   ; "2.18" >:: (fun ctxt ->
       assert_equal ~printer
