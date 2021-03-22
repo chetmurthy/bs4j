@@ -90,6 +90,14 @@
 
 *)
 
+let gen_of_string s =
+  let pos = ref 0 in
+  fun () ->
+    if !pos = String.length s then None
+    else let c = String.get s !pos in
+      pos := !pos + 1 ;
+      Some c
+
 let linews = [%sedlex.regexp? ' ' | '\t' | '\r']
 
 let digit = [%sedlex.regexp? '0'..'9']
@@ -101,7 +109,7 @@ let number = [%sedlex.regexp?  (Opt '-') , int , (Opt frac) , (Opt exp)]
 let letter = [%sedlex.regexp? 'a'..'z'|'A'..'Z']
 let ident = [%sedlex.regexp? letter, Star (letter|digit)]
 
-let unescaped = [%sedlex.regexp? 0x20 .. 0x21 | 0x23 .. 0x50 | 0x50 .. 0x10FFFF ]
+let unescaped = [%sedlex.regexp? 0x20 .. 0x21 | 0x23 .. 0x5B | 0x5D .. 0x10FFFF ]
 let hexdigit = [%sedlex.regexp? '0'..'9' | 'a'..'f' | 'A'..'F']
 let escaped = [%sedlex.regexp? "\\" , ( 0x22 | 0x5C | 0x2F | 0x62 | 0x66 | 0x6E | 0x72 | 0x74 | (0x75, Rep(hexdigit,4)) ) ]
 let char = [%sedlex.regexp? (unescaped | escaped ) ]
@@ -112,6 +120,67 @@ let yamlscalar_endchar = [%sedlex.regexp? Sub (yamlscalar_char, linews) ]
 let yamlscalar = [%sedlex.regexp?  yamlscalar_endchar, Opt (Star yamlscalar_char, yamlscalar_endchar) ]
 
 let comment = [%sedlex.regexp? '#' , Star(Compl '\n') ]
+
+let unquote_string s =
+  let buf = Buffer.create (String.length s) in
+  let lb = Sedlexing.Latin1.from_gen (gen_of_string s) in
+  let rec unrec0 () =
+    match%sedlex lb with
+      '"' -> unrec1 ()
+    | _ -> failwith "unquote_string: unexpected character"
+  and unrec1 () =
+    match%sedlex lb with
+      Plus unescaped ->
+      Buffer.add_string buf (Sedlexing.Latin1.lexeme lb) ;
+      unrec1 ()
+    | "\\", '"' -> Buffer.add_char buf '"' ; unrec1 ()
+    | "\\", '\\' -> Buffer.add_char buf '\\' ; unrec1 ()
+    | "\\", '/' -> Buffer.add_char buf '/' ; unrec1 ()
+    | "\\", 'b' -> Buffer.add_char buf '\b' ; unrec1 ()
+    | "\\", 'f' -> Buffer.add_char buf '\x4c' ; unrec1 ()
+    | "\\", 'n' -> Buffer.add_char buf '\n' ; unrec1 ()
+    | "\\", 'r' -> Buffer.add_char buf '\r' ; unrec1 ()
+    | "\\", 't' -> Buffer.add_char buf '\t' ; unrec1 ()
+    | "\\", 'u', Rep(hexdigit,4) ->
+      let s = Sedlexing.Latin1.sub_lexeme lb 2 4 in
+      let n = int_of_string ("0x"^s) in
+      Buffer.add_utf_8_uchar buf (Uchar.of_int n) ; unrec1 ()
+
+    | '"' ->
+      Buffer.contents buf
+
+    | _ -> failwith "unquote_string: internal error"
+  in unrec0 ()
+
+let indented n s =
+  let slen = String.length s in
+  if slen <= n then false
+  else
+    let rec irec ofs =
+      if ofs = n then true
+      else if String.get s ofs = ' ' then
+        irec (ofs+1)
+      else false
+    in irec 0
+
+let consume_indent n s =
+  let slen = String.length s in
+  if slen = 0 then ""
+  else if indented n s then
+    String.sub s n (slen - n)
+  else failwith "consume_indent"
+
+let unquote_rawstring ~fold indent s =
+  let sofs = (String.index s '(') + 1 in
+  let eofs = (String.index s ')') in
+  if sofs = eofs then "" else
+  let s = String.sub s sofs (eofs-sofs) in
+  let l = String.split_on_char '\n' s in
+  let l = (List.hd l) :: (List.map (consume_indent indent) (List.tl l)) in
+  if fold then
+    let l = List.map (function "" -> "\n" | s -> s) l in
+    String.concat "" l
+  else String.concat "\n" l
 
 type token =
   | LBRACKET
@@ -138,6 +207,11 @@ type token =
 type style_t =
     BLOCK of int
   | FLOW
+
+let extract_indent_position = function
+    (EOF, _) -> 0
+  | (_, ({Lexing.pos_bol; pos_cnum; _}, _)) ->
+    pos_cnum - pos_bol
 
 module St = struct
 type t =
@@ -171,11 +245,6 @@ let rec pop_styles loc rev_pushback = function
     assert (sst = []) ;
     (rev_pushback, [BLOCK 0])
   | _ -> failwith "pop_styles: dedent did not move back to previous indent position"
-
-let extract_indent_position = function
-    (EOF, _) -> 0
-  | (_, ({Lexing.pos_bol; pos_cnum; _}, _)) ->
-    pos_cnum - pos_bol
 
 let handle_indents_with st ((tok,(spos,epos as loc)) as t) =
   assert (st.pushback = []) ;
@@ -324,14 +393,6 @@ let rec jsontoken st =
       | (NEWLINE, _) -> St.set_bol st true ; jsontoken st
       | t -> t
     end
-
-let gen_of_string s =
-  let pos = ref 0 in
-  fun () ->
-    if !pos = String.length s then None
-    else let c = String.get s !pos in
-      pos := !pos + 1 ;
-      Some c
 
 let lex_string f s =
   let st = St.mk (Sedlexing.Latin1.from_gen (gen_of_string s)) in

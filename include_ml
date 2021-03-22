@@ -28,6 +28,7 @@ print_string "================ START ================\n";; flush stdout ;;
 #load "jsontoken.cmo";;
 #load "jsonparse.cmo";;
 open Jsontoken ;;
+open Jsonparse ;;
 #trace St.pop_styles ;;
 (*
 #trace Sedlexing.new_line ;;

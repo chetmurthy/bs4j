@@ -6,9 +6,9 @@ value positions_to_loc ?{comments=""} (spos, epos) =
 ;
 
 value compatible_lexer lb =
-  let (t, pos) = Jsontoken.jsontoken lb in
+  let ((tok, pos) as t) = Jsontoken.jsontoken lb in
   let pos = positions_to_loc pos in
-  let t = match t with [
+  let tok = match tok with [
     LBRACKET -> ("","[")
   | RBRACKET -> ("","]")
   | LBRACE -> ("","{")
@@ -25,15 +25,16 @@ value compatible_lexer lb =
   | YAMLSTRING "true" -> ("","true")
   | YAMLSTRING "null" -> ("","null")
   | YAMLSTRING s -> ("YAMLSTRING",s)
-  | RAWSTRING s -> ("RAWSTRING",s)
+  | RAWSTRING s ->
+    ("RAWSTRING",s)
   | INDENT _ _ -> ("INDENT","")
   | DEDENT _ _ -> ("DEDENT","")
   | NUMBER s -> ("NUMBER",s)
-  | STRING s -> ("STRING",s)
+  | STRING s -> ("STRING", s)
   | EOF -> ("EOI","")
 
   ] in
-  (t, pos)
+  (tok, pos)
 ;
 
 (* camlp5r *)
@@ -115,7 +116,7 @@ EXTEND
         -> `A [v :: l]
 
       | "[" ; l = LIST0 json SEP "," ; "]" -> `A l
-      | "{" ; l = LIST0 [ s=[ s=STRING -> s | s=YAMLSTRING -> s ] ; ":" ; v=json -> (s,v) ] SEP "," ; "}" -> `O l
+      | "{" ; l = LIST0 [ s=[ s=STRING -> unquote_string s | s=YAMLSTRING -> s ] ; ":" ; v=json -> (s,v) ] SEP "," ; "}" -> `O l
       | INDENT ; s=scalar ; DEDENT -> s
       | INDENT ; s=scalar ; ":" ; v=json ;
         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ;
@@ -128,9 +129,11 @@ EXTEND
   ;
 
   scalar:
-    [ [ s = RAWSTRING -> `String s
+    [ [ s = RAWSTRING ->
+        let indent = Ploc.first_pos loc - Ploc.bol_pos loc in
+        `String (unquote_rawstring ~{fold=False} indent s)
       | l = LIST1 [ s = YAMLSTRING -> s ] -> `String (String.concat " " l)
-      | s = STRING -> `String s
+      | s = STRING -> `String (unquote_string s)
       | n = NUMBER -> `Float (float_of_string n)
       | "null" -> `Null
       | "true" -> `Bool True

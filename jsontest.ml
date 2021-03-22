@@ -233,12 +233,12 @@ c: d
       )
   ; "flow" >:: (fun ctxt ->
         assert_equal ~printer
-          (`A ([`String ({|"a"|}); `String ({|"b"|})]))
+          (`A ([`String ("a"); `String ("b")]))
           (of_string_exn {|["a", "b"]|})
       )
   ; "flow-2" >:: (fun ctxt ->
         assert_equal ~printer
-          (`O ([("a", `A ([`String ({|"a"|}); `String ({|"b"|})]))]))
+          (`O ([("a", `A ([`String ("a"); `String ("b")]))]))
           (of_string_exn {|
 a:
  ["a", "b"]
@@ -272,14 +272,14 @@ a:
       )
   ; "rawstring" >:: (fun ctxt ->
         assert_equal ~printer
-          (`String ({|R"a(foo)a"|}))
+          (`String ("foo"))
           (of_string_exn {|
 R"a(foo)a"
 |})
       )
   ; "rawstring-1" >:: (fun ctxt ->
         assert_equal ~printer
-          (`String ({|R"(foo)"|}))
+          (`String ("foo"))
           (of_string_exn {|
   R"(foo)"
 |})
@@ -430,26 +430,24 @@ Sammy Sosa: {
 - Chicago Cubs
 - St Louis Cardinals|})
       )
-  ]
-
-let preview2 = "preview2" >::: [
-    "mt" >:: (fun ctxt ->
-        ()
-      )
   ; "2.8" >:: (fun ctxt ->
-      warning "example 2.8 has multiple docs: this isn't implemented right" ;
-        assert_equal ~printer
-          (`O (
+        assert_equal ~printer:docs_printer
+          [`O (
               [("time", `String ("20:03:20")); ("player", `String ("Sammy Sosa"));
                ("action", `String ("strike (miss)"))]
-            ))
-        (of_string_exn {|---
-time: 20:03:20
+            );
+           `O (
+             [("time", `String ("20:03:47")); ("player", `String ("Sammy Sosa"));
+              ("action", `String ("grand slam"))]
+           )
+          ]
+        (docs_of_string_exn {|---
+time: "20:03:20"
 player: Sammy Sosa
 action: strike (miss)
 ...
 ---
-time: 20:03:47
+time: "20:03:47"
 player: Sammy Sosa
 action: grand slam
 ...|})
@@ -468,31 +466,6 @@ rbi:
   # 1998 rbi ranking
   - Sammy Sosa
   - Ken Griffey|})
-      )
-  ; "2.10" >:: (fun ctxt ->
-      assert_raises_exn_pattern
-        "Anchors are not supported when serialising to JSON"
-        (fun () -> of_string_exn {|---
-hr:
-  - Mark McGwire
-  # Following node labeled SS
-  - &SS Sammy Sosa
-rbi:
-  - *SS # Subsequent occurrence
-  - Ken Griffey|})
-      )
-  ; "2.11" >:: (fun ctxt ->
-      assert_raises_exn_pattern
-        "only string keys are supported"
-        (fun () -> of_string_exn {|? - Detroit Tigers
-  - Chicago cubs
-:
-  - 2001-07-23
-
-? [ New York Yankees,
-    Atlanta Braves ]
-: [ 2001-07-02, 2001-08-12,
-    2001-08-14 ]|})
       )
   ; "2.12" >:: (fun ctxt ->
       assert_equal ~printer
@@ -516,9 +489,15 @@ rbi:
         (`String ("\\//||\\/||\n\
                    // ||  ||__"))
         (of_string_exn {|# ASCII Art
---- |
-  \//||\/||
-  // ||  ||__|})
+---
+  R"(\//||\/||
+     // ||  ||__)"|})
+      )
+  ]
+
+let preview2 = "preview2" >::: [
+    "mt" >:: (fun ctxt ->
+        ()
       )
   ; "2.14" >:: (fun ctxt ->
       assert_equal ~printer
