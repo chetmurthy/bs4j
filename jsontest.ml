@@ -559,12 +559,6 @@ stats:
      )"
 |})
       )
-  ]
-
-let preview2 = "preview2" >::: [
-    "mt" >:: (fun ctxt ->
-        ()
-      )
   ; "2.17" >:: (fun ctxt ->
       assert_equal ~printer
         (`O (
@@ -577,11 +571,11 @@ let preview2 = "preview2" >::: [
           ))
         (of_string_exn {|unicode: "Sosa did fine.\u263A"
 control: "\b1998\t1999\t2000\n"
-hex esc: "\x0d\x0a is \r\n"
+hex esc: "\u000d\u000a is \r\n"
 
-single: '"Howdy!" he cried.'
-quoted: ' # Not a ''comment''.'
-tie-fighter: '|\-*-/|'|})
+single: R"("Howdy!" he cried.)"
+quoted: R"( # Not a 'comment'.)"
+"tie-fighter": R"(|\-*-/|)"|})
       )
   ; "2.18" >:: (fun ctxt ->
       assert_equal ~printer
@@ -596,6 +590,12 @@ tie-fighter: '|\-*-/|'|})
 quoted: "So does this
   quoted scalar.\n"
 |})
+      )
+  ]
+
+let preview2 = "preview2" >::: [
+    "mt" >:: (fun ctxt ->
+        ()
       )
   ; "2.19" >:: (fun ctxt ->
       assert_equal ~printer
