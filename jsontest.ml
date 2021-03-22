@@ -540,12 +540,6 @@ rbi:
 
      What a year!)"|})
       )
-  ]
-
-let preview2 = "preview2" >::: [
-    "mt" >:: (fun ctxt ->
-        ()
-      )
   ; "2.16" >:: (fun ctxt ->
       assert_equal ~printer
         (`O (
@@ -555,13 +549,21 @@ let preview2 = "preview2" >::: [
              ("stats", `String ("65 Home Runs\n0.278 Batting Average\n"))]
           ))
         (of_string_exn {|name: Mark McGwire
-accomplishment:
-  Mark set a major league
-  home run record in 1998.
+accomplishment: >
+  R"(Mark set a major league
+     home run record in 1998.
+     )"
 stats:
   R"(65 Home Runs
-     0.278 Batting Average)"
+     0.278 Batting Average
+     )"
 |})
+      )
+  ]
+
+let preview2 = "preview2" >::: [
+    "mt" >:: (fun ctxt ->
+        ()
       )
   ; "2.17" >:: (fun ctxt ->
       assert_equal ~printer

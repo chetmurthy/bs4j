@@ -154,7 +154,7 @@ let unquote_string s =
 
 let indented n s =
   let slen = String.length s in
-  if slen <= n then false
+  if slen < n then false
   else
     let rec irec ofs =
       if ofs = n then true
@@ -205,6 +205,21 @@ let fold_lines l =
       Buffer.add_string buf "\n" ;
       frec []
   in frec l
+
+let fold_lines l =
+  let rec frec = function
+
+    | l1::l2::tl when l1 <> "" && l2 <> "" && String.get l1 0 <> ' ' && String.get l2 0 <> ' ' ->
+      l1::" "::(frec (l2::tl))
+
+    | [l1] when l1 <> "" -> [l1]
+    | [""] -> []
+
+    | l1::tl -> l1::"\n"::(frec tl)
+
+    | [] -> []
+
+  in String.concat "" (frec l)
 
 let unquote_rawstring ~fold indent s =
   let sofs = (String.index s '(') + 1 in
