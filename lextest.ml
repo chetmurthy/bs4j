@@ -27,6 +27,8 @@ type token = Jsontoken.token =
   | COLON
   | COMMA
   | DASH
+  | DASHDASHDASH
+  | DOTDOTDOT
   | BAR
   | GT
   | PLUS
@@ -163,6 +165,29 @@ a:
   c
 |})
       )
+  ; "empty-1" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(INDENT (0, 0)); (DEDENT (0, 0)); EOF]
+          (tokens_of_string {||})
+      )
+  ; "empty-2" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(INDENT (0, 0)); DASHDASHDASH; DOTDOTDOT;
+           (DEDENT (0, 0)); EOF]
+          (tokens_of_string {|
+---
+...
+|})
+      )
+  ; "comment-1" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(INDENT (0, 0)); (YAMLSTRING "a");
+           (DEDENT (0, 0)); EOF]
+          (tokens_of_string {|
+# foo
+a
+|})
+      )
   ]
 
 open Jsonparse
@@ -249,6 +274,19 @@ R"a(foo)a"
 a:
   b
   c
+|})
+      )
+  ; "empty-1" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`Null)
+          (parse1 {||})
+      )
+  ; "comment-1" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("a"))
+          (parse1 {|
+# foo
+a
 |})
       )
   ]

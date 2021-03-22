@@ -121,6 +121,8 @@ type token =
   | COLON
   | COMMA
   | DASH
+  | DASHDASHDASH
+  | DOTDOTDOT
   | BAR
   | GT
   | PLUS
@@ -282,10 +284,13 @@ let rec rawtoken st =
   | "+" -> (PLUS,pos())
   | "," -> (COMMA,pos())
   | "-" -> (DASH,pos())
-  | Star linews -> rawtoken st
+  | "---" -> (DASHDASHDASH,pos())
+  | "..." -> (DOTDOTDOT,pos())
+  | Plus linews -> rawtoken st
   | '\n' -> (NEWLINE,pos())
   | yamlscalar -> (YAMLSTRING (Sedlexing.Latin1.lexeme buf), pos())
   | eof -> (EOF,pos())
+  | comment -> rawtoken st
   | _ -> failwith "Unexpected character"
 
 
