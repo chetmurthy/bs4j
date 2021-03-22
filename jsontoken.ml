@@ -109,7 +109,7 @@ let string = [%sedlex.regexp?  '"' , (Star char) , '"']
 
 let yamlscalar_char = [%sedlex.regexp? Compl (Chars "-[]():,#\"\r\n") ]
 let yamlscalar_endchar = [%sedlex.regexp? Sub (yamlscalar_char, linews) ]
-let yamlscalar = [%sedlex.regexp?  yamlscalar_endchar, Opt (Star yamlscalar_char, yamlscalar_char) ]
+let yamlscalar = [%sedlex.regexp?  yamlscalar_endchar, Opt (Star yamlscalar_char, yamlscalar_endchar) ]
 
 let comment = [%sedlex.regexp? '#' , Star(Compl '\n') ]
 

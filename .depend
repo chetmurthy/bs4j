@@ -1,7 +1,7 @@
-lextest.cmo : \
+jsontest.cmo : \
     jsontoken.cmo \
     jsonparse.cmo
-lextest.cmx : \
+jsontest.cmx : \
     jsontoken.cmx \
     jsonparse.cmx
 yamltest.cmo :
