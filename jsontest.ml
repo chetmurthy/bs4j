@@ -50,23 +50,22 @@ let tokens_of_string s =
 let lexing = "lexing" >::: [
     "simple" >:: (fun ctxt ->
         assert_equal ~printer
-          [INDENT (0, 0); YAMLSTRING "a";
-           DEDENT (0, 0); EOF]
+          [YAMLSTRING "a";
+           EOF]
           (tokens_of_string {|a|})
       )
   ; "2" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0)); (YAMLSTRING "a"); COLON;
+          [(YAMLSTRING "a"); COLON;
            (INDENT (0, 2)); (YAMLSTRING "null");
-           (DEDENT (0, 2)); (DEDENT (0, 0)); EOF]
+           (DEDENT (0, 2)); EOF]
           (tokens_of_string "\na:\n  null")
       )
   ; "3" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0));
-           (YAMLSTRING "a"); COLON; (INDENT (0, 3)); (YAMLSTRING "b"); (DEDENT (0, 3));
+          [(YAMLSTRING "a"); COLON; (INDENT (0, 3)); (YAMLSTRING "b"); (DEDENT (0, 3));
            (YAMLSTRING "c"); COLON; (INDENT (0, 3)); (YAMLSTRING "d"); (DEDENT (0, 3));
-           (DEDENT (0, 0)); EOF]
+           EOF]
           (tokens_of_string {|
 a: b
 c: d
@@ -74,18 +73,16 @@ c: d
       )
   ; "flow" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0));
-           LBRACKET; (STRING "\"a\""); COMMA;
+          [LBRACKET; (STRING "\"a\""); COMMA;
            (STRING "\"b\""); RBRACKET;
-           (DEDENT (0, 0)); EOF]
+           EOF]
           (tokens_of_string {|["a", "b"]|})
       )
   ; "flow-2" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0));
-           (YAMLSTRING "a"); COLON; LBRACKET;
+          [(YAMLSTRING "a"); COLON; LBRACKET;
            (STRING "\"a\""); COMMA; (STRING "\"b\"");
-           RBRACKET; (DEDENT (0, 0)); EOF]
+           RBRACKET; EOF]
           (tokens_of_string {|
 a:
  ["a", "b"]
@@ -93,9 +90,9 @@ a:
       )
   ; "flow-3" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0)); LBRACE; (YAMLSTRING "hr");
+          [LBRACE; (YAMLSTRING "hr");
            COLON; (NUMBER "63"); RBRACE;
-           (DEDENT (0, 0)); EOF]
+           EOF]
           (tokens_of_string {|
 { hr: 63
 }
@@ -103,12 +100,11 @@ a:
       )
   ; "indents" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0));
-           YAMLSTRING "a"; COLON; INDENT (0, 1);
+          [YAMLSTRING "a"; COLON; INDENT (0, 1);
            YAMLSTRING "b"; COLON; INDENT (1, 4);
            YAMLSTRING "c"; DEDENT (1, 4);
            DEDENT (0, 1);
-           (DEDENT (0, 0)); EOF]
+           EOF]
           (tokens_of_string {|
 a:
  b: c
@@ -116,14 +112,13 @@ a:
       )
   ; "indents-2" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0));
-           YAMLSTRING "a"; COLON; INDENT (0, 1);
+          [YAMLSTRING "a"; COLON; INDENT (0, 1);
            YAMLSTRING "b"; COLON; INDENT (1, 4);
            YAMLSTRING "c"; DEDENT (1, 4);
            YAMLSTRING "d"; COLON; INDENT (1, 4);
            YAMLSTRING "e"; DEDENT (1, 4);
            DEDENT (0, 1);
-           (DEDENT (0, 0)); EOF]
+           EOF]
           (tokens_of_string {|
 a:
  b: c
@@ -132,13 +127,12 @@ a:
       )
   ; "indents-3" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0));
-           YAMLSTRING "a"; COLON; INDENT (0, 1);
+          [YAMLSTRING "a"; COLON; INDENT (0, 1);
            DASH; INDENT (1, 3); YAMLSTRING "b";
            DEDENT (1, 3); DASH; INDENT (1, 3);
            YAMLSTRING "d"; DEDENT (1, 3);
            DEDENT (0, 1);
-           (DEDENT (0, 0)); EOF]
+           EOF]
           (tokens_of_string {|
 a:
  - b
@@ -147,28 +141,26 @@ a:
       )
   ; "rawstring" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0));
-           INDENT(0,4); RAWSTRING {|R"a(foo)a"|}; DEDENT(0,4);
-           DEDENT (0, 0); EOF]
+          [INDENT(0,4); RAWSTRING {|R"a(foo)a"|}; DEDENT(0,4);
+           EOF]
           (tokens_of_string {|
 R"a(foo)a"
 |})
       )
   ; "rawstring-1" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0));
-           INDENT(0,5); RAWSTRING {|R"(foo)"|}; DEDENT(0,5);
-           DEDENT (0, 0);  EOF]
+          [INDENT(0,5); RAWSTRING {|R"(foo)"|}; DEDENT(0,5);
+           EOF]
           (tokens_of_string {|
   R"(foo)"
 |})
       )
   ; "strings-2" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0)); (YAMLSTRING "a"); COLON;
+          [(YAMLSTRING "a"); COLON;
            (INDENT (0, 2)); (YAMLSTRING "b");
            (YAMLSTRING "c"); (DEDENT (0, 2));
-           (DEDENT (0, 0)); EOF]
+           EOF]
           (tokens_of_string {|
 a:
   b
@@ -177,13 +169,13 @@ a:
       )
   ; "empty-1" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0)); (DEDENT (0, 0)); EOF]
+          [EOF]
           (tokens_of_string {||})
       )
   ; "empty-2" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0)); DASHDASHDASH; DOTDOTDOT;
-           (DEDENT (0, 0)); EOF]
+          [DASHDASHDASH; DOTDOTDOT;
+           EOF]
           (tokens_of_string {|
 ---
 ...
@@ -191,8 +183,8 @@ a:
       )
   ; "comment-1" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0)); (YAMLSTRING "a");
-           (DEDENT (0, 0)); EOF]
+          [(YAMLSTRING "a");
+           EOF]
           (tokens_of_string {|
 # foo
 a
@@ -200,9 +192,9 @@ a
       )
   ; "float-1" >:: (fun ctxt ->
         assert_equal ~printer
-          [(INDENT (0, 0)); (YAMLSTRING "hr"); COLON;
+          [(YAMLSTRING "hr"); COLON;
            (INDENT (0, 5)); (NUMBER "65");
-           (DEDENT (0, 5)); (DEDENT (0, 0)); EOF]
+           (DEDENT (0, 5)); EOF]
           (tokens_of_string {|
 hr:  65    # Home runs
 |})

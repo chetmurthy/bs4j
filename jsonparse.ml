@@ -87,6 +87,15 @@ EXTEND
   GLOBAL: json json_eoi scalar ;
   json:
     [ [ s = scalar -> s
+
+      | s = scalar ; ":" ; v=json ;
+        l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
+        -> `O [(string_of_scalar s,v) :: l]
+
+      | "-" ; v=json ;
+        l = LIST0 [ "-" ; v=json -> v ]
+        -> `A [v :: l]
+
       | "[" ; l = LIST0 json SEP "," ; "]" -> `A l
       | "{" ; l = LIST0 [ s=[ s=STRING -> s | s=YAMLSTRING -> s ] ; ":" ; v=json -> (s,v) ] SEP "," ; "}" -> `O l
       | INDENT ; s=scalar ; DEDENT -> s

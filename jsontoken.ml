@@ -145,15 +145,13 @@ type t =
     lexbuf : Sedlexing.lexbuf
   ; mutable style_stack : style_t list
   ; mutable at_bol : bool
-  ; mutable at_eof : bool
   ; mutable pushback : (token * (Lexing.position * Lexing.position)) list
   }
   let mk lexbuf = {
     lexbuf
   ; style_stack = [BLOCK 0]
   ; at_bol = true
-  ; at_eof = false
-  ; pushback = [(INDENT(0,0), Lexing.(dummy_pos, dummy_pos))]
+  ; pushback = []
   }
   let set_bol st b = st.at_bol <- b
   let pop_flow st =
@@ -301,15 +299,12 @@ let rec jsontoken st =
     st.pushback <- t ;
     h
 
-  | { pushback = [] ; at_eof=true; _ } ->
-    (EOF, Lexing.(dummy_pos, dummy_pos))
-
   | { pushback = [] ; at_bol = true ; style_stack = (BLOCK _) :: _ ; _ } ->
     ignore(indentspaces st.lexbuf) ;
     St.set_bol st false ;
     jsontoken st
 
-  | { pushback = [] ; at_bol = false ; at_eof = false ; style_stack = (BLOCK m) :: sst ; _ } -> begin
+  | { pushback = [] ; at_bol = false ; style_stack = (BLOCK m) :: sst ; _ } -> begin
       match rawtoken st with
         (RBRACKET, _) -> failwith "jsontoken: ']' found in block style"
       | (LBRACKET, _) as t -> St.push_flow st ; t
@@ -317,19 +312,6 @@ let rec jsontoken st =
       | (LBRACE, _) as t -> St.push_flow st ; t
       | (COLON, _) as t -> t
       | (NEWLINE, _) -> St.set_bol st true ; jsontoken st
-      | (EOF,p) ->
-        st.at_eof <- true ;
-        let rec lastrec = function
-            (BLOCK m)::(BLOCK m')::l ->
-            (DEDENT(m',m),p)::(lastrec ((BLOCK m')::l))
-          | [BLOCK 0] ->
-            [(DEDENT(0,0),p); (EOF,p)]
-        in
-        let toks = lastrec st.style_stack in
-        st.style_stack <- [] ;
-        st.pushback <- List.tl toks ;
-        List.hd toks
-
       | t -> handle_indents_with st t
   end
 
