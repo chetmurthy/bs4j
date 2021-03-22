@@ -141,7 +141,7 @@ a:
       )
   ; "rawstring" >:: (fun ctxt ->
         assert_equal ~printer
-          [INDENT(0,4); RAWSTRING {|R"a(foo)a"|}; DEDENT(0,4);
+          [RAWSTRING {|R"a(foo)a"|};
            EOF]
           (tokens_of_string {|
 R"a(foo)a"
@@ -149,7 +149,7 @@ R"a(foo)a"
       )
   ; "rawstring-1" >:: (fun ctxt ->
         assert_equal ~printer
-          [INDENT(0,5); RAWSTRING {|R"(foo)"|}; DEDENT(0,5);
+          [RAWSTRING {|R"(foo)"|};
            EOF]
           (tokens_of_string {|
   R"(foo)"
@@ -198,6 +198,23 @@ a
           (tokens_of_string {|
 hr:  65    # Home runs
 |})
+      )
+  ; "fold-1" >:: (fun ctxt ->
+        assert_equal ~printer
+          [DASHDASHDASH; (INDENT (0, 4)); GT;
+           (RAWSTRING
+              "R\"(Mark McGwire's\n     year was crippled\n     by a knee injury.)\"");
+           (DEDENT (0, 4)); EOF]
+          (tokens_of_string {|--- >
+  R"(Mark McGwire's
+     year was crippled
+     by a knee injury.)"|})
+      )
+  ; "yamlstring-1" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(YAMLSTRING "a"); COLON; (INDENT (0, 3));
+           (YAMLSTRING "b c"); (DEDENT (0, 3)); EOF]
+          (tokens_of_string {|a: b c|})
       )
   ]
 
@@ -319,6 +336,11 @@ a
 hr:  65    # Home runs
 avg: 0.288
 |})
+      )
+  ; "yamlstring-1" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`O ([("a", `String ("b c"))]))
+          (of_string_exn {|a: b c|})
       )
   ]
 
@@ -493,19 +515,13 @@ rbi:
   R"(\//||\/||
      // ||  ||__)"|})
       )
-  ]
-
-let preview2 = "preview2" >::: [
-    "mt" >:: (fun ctxt ->
-        ()
-      )
   ; "2.14" >:: (fun ctxt ->
       assert_equal ~printer
         (`String ("Mark McGwire's year was crippled by a knee injury."))
         (of_string_exn {|--- >
-  Mark McGwire's
-  year was crippled
-  by a knee injury.|})
+  R"(Mark McGwire's
+     year was crippled
+     by a knee injury.)"|})
       )
   ; "2.15" >:: (fun ctxt ->
       assert_equal ~printer
@@ -516,13 +532,19 @@ let preview2 = "preview2" >::: [
              What a year!"
           ))
         (of_string_exn {|>
- Sammy Sosa completed another
- fine season with great stats.
+  R"(Sammy Sosa completed another
+     fine season with great stats.
 
-   63 Home Runs
-   0.288 Batting Average
+       63 Home Runs
+       0.288 Batting Average
 
- What a year!|})
+     What a year!)"|})
+      )
+  ]
+
+let preview2 = "preview2" >::: [
+    "mt" >:: (fun ctxt ->
+        ()
       )
   ; "2.16" >:: (fun ctxt ->
       assert_equal ~printer
@@ -533,12 +555,12 @@ let preview2 = "preview2" >::: [
              ("stats", `String ("65 Home Runs\n0.278 Batting Average\n"))]
           ))
         (of_string_exn {|name: Mark McGwire
-accomplishment: >
+accomplishment:
   Mark set a major league
   home run record in 1998.
-stats: |
-  65 Home Runs
-  0.278 Batting Average
+stats:
+  R"(65 Home Runs
+     0.278 Batting Average)"
 |})
       )
   ; "2.17" >:: (fun ctxt ->

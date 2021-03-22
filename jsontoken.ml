@@ -115,7 +115,7 @@ let escaped = [%sedlex.regexp? "\\" , ( 0x22 | 0x5C | 0x2F | 0x62 | 0x66 | 0x6E 
 let char = [%sedlex.regexp? (unescaped | escaped ) ]
 let string = [%sedlex.regexp?  '"' , (Star char) , '"']
 
-let yamlscalar_char = [%sedlex.regexp? Compl (Chars "-[]{}:,#\"\r\n") ]
+let yamlscalar_char = [%sedlex.regexp? Compl (Chars "-[]{}:,#\\\"\r\n") ]
 let yamlscalar_endchar = [%sedlex.regexp? Sub (yamlscalar_char, linews) ]
 let yamlscalar = [%sedlex.regexp?  yamlscalar_endchar, Opt (Star yamlscalar_char, yamlscalar_endchar) ]
 
@@ -170,6 +170,42 @@ let consume_indent n s =
     String.sub s n (slen - n)
   else failwith "consume_indent"
 
+let fold_exceptions s =
+  if s = "" then "\n"
+  else if String.get s 0 = ' ' then s^"\n"
+  else s
+
+let fold_lines l =
+  let buf = Buffer.create 23 in
+  let rec frec = function
+      [] -> Buffer.contents buf
+    | l1::tl when l1 <> "" && String.get l1 0 = ' ' ->
+      Buffer.add_string buf l1 ;
+      Buffer.add_string buf "\n" ;
+      frec tl
+
+    | ""::l2::tl ->
+      Buffer.add_string buf "\n" ;
+      frec (l2::tl)
+
+    | l1::l2::tl when l2 <> "" ->
+      Buffer.add_string buf l1 ;
+      Buffer.add_string buf " " ;
+      frec (l2::tl)
+
+    | l1::l2::tl when l2 = "" ->
+      Buffer.add_string buf l1 ;
+      Buffer.add_string buf "\n" ;
+      frec (l2::tl)
+
+    | l1::tl when l1 <> "" ->
+      Buffer.add_string buf l1 ;
+      frec tl
+    | [""] ->
+      Buffer.add_string buf "\n" ;
+      frec []
+  in frec l
+
 let unquote_rawstring ~fold indent s =
   let sofs = (String.index s '(') + 1 in
   let eofs = (String.index s ')') in
@@ -178,8 +214,7 @@ let unquote_rawstring ~fold indent s =
   let l = String.split_on_char '\n' s in
   let l = (List.hd l) :: (List.map (consume_indent indent) (List.tl l)) in
   if fold then
-    let l = List.map (function "" -> "\n" | s -> s) l in
-    String.concat "" l
+    fold_lines l
   else String.concat "\n" l
 
 type token =
@@ -380,6 +415,7 @@ let rec jsontoken st =
       | (RBRACE, _) -> failwith "jsontoken: '}' found in block style"
       | (LBRACE, _) as t -> St.push_flow st ; t
       | (COLON, _) as t -> t
+      | (RAWSTRING _, _) as t -> t
       | (NEWLINE, _) -> St.set_bol st true ; jsontoken st
       | t -> handle_indents_with st t
   end
