@@ -91,6 +91,16 @@ a:
  ["a", "b"]
 |})
       )
+  ; "flow-3" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(INDENT (0, 0)); LBRACE; (YAMLSTRING "hr");
+           COLON; (NUMBER "63"); RBRACE;
+           (DEDENT (0, 0)); EOF]
+          (tokens_of_string {|
+{ hr: 63
+}
+|})
+      )
   ; "indents" >:: (fun ctxt ->
         assert_equal ~printer
           [(INDENT (0, 0));
@@ -407,12 +417,6 @@ Sammy Sosa: {
     avg: 0.288
   }|})
       )
-  ]
-
-let preview2 = "preview2" >::: [
-    "mt" >:: (fun ctxt ->
-        ()
-      )
   ; "2.7" >:: (fun ctxt ->
       warning "example 2.7 has multiple docs: this isn't implemented right" ;
         assert_equal ~printer
@@ -429,6 +433,12 @@ let preview2 = "preview2" >::: [
 ---
 - Chicago Cubs
 - St Louis Cardinals|})
+      )
+  ]
+
+let preview2 = "preview2" >::: [
+    "mt" >:: (fun ctxt ->
+        ()
       )
   ; "2.8" >:: (fun ctxt ->
       warning "example 2.8 has multiple docs: this isn't implemented right" ;

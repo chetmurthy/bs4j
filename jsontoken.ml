@@ -107,7 +107,7 @@ let escaped = [%sedlex.regexp? "\\" , ( 0x22 | 0x5C | 0x2F | 0x62 | 0x66 | 0x6E 
 let char = [%sedlex.regexp? (unescaped | escaped ) ]
 let string = [%sedlex.regexp?  '"' , (Star char) , '"']
 
-let yamlscalar_char = [%sedlex.regexp? Compl (Chars "-[]():,#\"\r\n") ]
+let yamlscalar_char = [%sedlex.regexp? Compl (Chars "-[]{}:,#\"\r\n") ]
 let yamlscalar_endchar = [%sedlex.regexp? Sub (yamlscalar_char, linews) ]
 let yamlscalar = [%sedlex.regexp?  yamlscalar_endchar, Opt (Star yamlscalar_char, yamlscalar_endchar) ]
 
@@ -333,7 +333,7 @@ let rec jsontoken st =
       | t -> handle_indents_with st t
   end
 
-  | { pushback = [] ; at_bol = false ; style_stack = FLOW :: _ ; _ } -> begin
+  | { pushback = [] ; style_stack = FLOW :: _ ; _ } -> begin
       match rawtoken st with
         (RBRACKET, _) as t -> St.pop_flow st ; t
       | (LBRACKET, _) as t -> St.push_flow st ; t

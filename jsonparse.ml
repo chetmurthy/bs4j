@@ -88,7 +88,7 @@ EXTEND
   json:
     [ [ s = scalar -> s
       | "[" ; l = LIST0 json SEP "," ; "]" -> `A l
-      | "{" ; l = LIST0 [ s=STRING ; ":" ; v=json -> (s,v) ] SEP "," ; "}" -> `O l
+      | "{" ; l = LIST0 [ s=[ s=STRING -> s | s=YAMLSTRING -> s ] ; ":" ; v=json -> (s,v) ] SEP "," ; "}" -> `O l
       | INDENT ; s=scalar ; DEDENT -> s
       | INDENT ; s=scalar ; ":" ; v=json ;
         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ;
