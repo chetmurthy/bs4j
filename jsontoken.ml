@@ -121,6 +121,9 @@ type token =
   | COLON
   | COMMA
   | DASH
+  | BAR
+  | GT
+  | PLUS
   | NUMBER of string
   | STRING of string
   | RAWSTRING of string
@@ -274,6 +277,9 @@ let rec rawtoken st =
   | "{" -> (LBRACE,pos())
   | "}" -> (RBRACE,pos())
   | ":" -> (COLON,pos())
+  | "|" -> (BAR,pos())
+  | ">" -> (GT,pos())
+  | "+" -> (PLUS,pos())
   | "," -> (COMMA,pos())
   | "-" -> (DASH,pos())
   | Star linews -> rawtoken st

@@ -97,7 +97,7 @@ EXTEND
 
   scalar:
     [ [ s = RAWSTRING -> `String s
-      | s = YAMLSTRING -> `String s
+      | l = LIST1 [ s = YAMLSTRING -> s ] -> `String (String.concat " " l)
       | s = STRING -> `String s
       | n = NUMBER -> `Float (float_of_string n)
       | "null" -> `Null

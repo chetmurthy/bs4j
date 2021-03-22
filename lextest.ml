@@ -27,6 +27,9 @@ type token = Jsontoken.token =
   | COLON
   | COMMA
   | DASH
+  | BAR
+  | GT
+  | PLUS
   | NUMBER of string
   | STRING of string
   | RAWSTRING of string
@@ -148,6 +151,18 @@ R"a(foo)a"
   R"(foo)"
 |})
       )
+  ; "strings-2" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(INDENT (0, 0)); (YAMLSTRING "a"); COLON;
+           (INDENT (0, 2)); (YAMLSTRING "b");
+           (YAMLSTRING "c"); (DEDENT (0, 2));
+           (DEDENT (0, 0)); EOF]
+          (tokens_of_string {|
+a:
+  b
+  c
+|})
+      )
   ]
 
 open Jsonparse
@@ -166,6 +181,14 @@ let parsing = "parsing" >::: [
           (parse1 "\na:\n  null")
       )
 
+  ; "3" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`O ([("a", `String ("b")); ("c", `String ("d"))]))
+          (parse1 {|
+a: b
+c: d
+|})
+      )
   ; "flow" >:: (fun ctxt ->
         assert_equal ~printer
           (`A ([`String ({|"a"|}); `String ({|"b"|})]))
@@ -217,6 +240,15 @@ R"a(foo)a"
           (`String ({|R"(foo)"|}))
           (parse1 {|
   R"(foo)"
+|})
+      )
+  ; "strings-2" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`O ([("a", `String ("b c"))]))
+          (parse1 {|
+a:
+  b
+  c
 |})
       )
   ]
