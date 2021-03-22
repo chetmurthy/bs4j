@@ -5,18 +5,18 @@ PACKAGES=fmt,camlp5.extprint,camlp5.extend,camlp5.pprintf,pcre,yaml,pa_ppx.deriv
 
 OBJ=jsontoken.cmo jsonparse.cmo
 
-all: $(OBJ) yamltest lextest
+all: $(OBJ) yamltest jsontest
 
 yamltest: yamltest.cmo
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -linkpkg -linkall -syntax camlp5r $^ -o $@
 
-lextest: jsontoken.cmo jsonparse.cmo lextest.cmo
+jsontest: jsontoken.cmo jsonparse.cmo jsontest.cmo
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -linkpkg -linkall -syntax camlp5r $^ -o $@
 
 test:: all
 	mkdir -p _build
-	./lextest -runner sequential
-#	./yamltest
+	./jsontest -runner sequential || true
+#	./yamltest || true
 
 .SUFFIXES: .mll .ml .cmo .cmx
 
@@ -29,7 +29,7 @@ jsontoken.cmo: jsontoken.ml
 yamltest.cmo: yamltest.ml
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -syntax camlp5o -c $<
 
-lextest.cmo: lextest.ml
+jsontest.cmo: jsontest.ml
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -syntax camlp5o -c $<
 
 .mll.ml:
@@ -37,11 +37,11 @@ lextest.cmo: lextest.ml
 #	perl -p -i -e 's,#.*,,' $@
 
 clean:
-	rm -rf yamltest lextest *.cm* *.o yamllexer.ml _build *.log *.cache
+	rm -rf yamltest jsontest *.cm* *.o yamllexer.ml _build *.log *.cache
 
 
 depend::
-	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5o yamltest.ml lextest.ml > .depend.NEW || true
+	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5o yamltest.ml jsontest.ml > .depend.NEW || true
 	$(OCAMLFIND) ocamldep $(DEBUG) -package sedlex.ppx jsontoken.ml >> .depend.NEW || true
 	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5r jsonparse.ml >> .depend.NEW
 	mv .depend.NEW .depend
