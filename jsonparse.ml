@@ -67,11 +67,16 @@ type value_ =
   | `O of list (string * value_)
   | `String of string ] [@@deriving (show,eq);]
 ;
+type value_list = list value_ [@@deriving (show,eq);] ;
 
 value g = Grammar.gcreate lexer;
 value (json : Grammar.Entry.e value_) = Grammar.Entry.create g "json";
 value (scalar : Grammar.Entry.e value_) = Grammar.Entry.create g "scalar";
 value json_eoi = Grammar.Entry.create g "json_eoi";
+value (doc : Grammar.Entry.e value_) = Grammar.Entry.create g "doc";
+value (doc_eoi : Grammar.Entry.e value_) = Grammar.Entry.create g "doc_eoi";
+value (docs : Grammar.Entry.e (list value_)) = Grammar.Entry.create g "docs";
+value (docs_eoi : Grammar.Entry.e (list value_)) = Grammar.Entry.create g "docs_eoi";
 
 value string_of_scalar = fun [
   `String s -> s
@@ -84,7 +89,20 @@ value string_of_scalar = fun [
 ;
 
 EXTEND
-  GLOBAL: json json_eoi scalar ;
+  GLOBAL: json json_eoi scalar
+          doc doc_eoi docs docs_eoi ;
+  doc: [ [ v=json -> v
+         | "---" ; v=json -> v
+         | "---" ; v=json ; "..." -> v
+    ] ]
+  ;
+  delim_doc: [ [ "---" ; v=json -> v
+         | "---" ; v=json ; "..." -> v
+    ] ]
+  ;
+  docs: [ [ l = LIST1 delim_doc -> l
+    ] ]
+  ;
   json:
     [ [ s = scalar -> s
 
@@ -121,10 +139,16 @@ EXTEND
   ;
 
   json_eoi : [ [ l = json ; EOI -> l ] ] ;
+  doc_eoi : [ [ l = doc ; EOI -> l ] ] ;
+  docs_eoi : [ [ l = docs ; EOI -> l ] ] ;
 END;
 
 value parse_json = Grammar.Entry.parse json ;
 value parse_json_eoi = Grammar.Entry.parse json_eoi ;
+value parse_doc = Grammar.Entry.parse doc ;
+value parse_doc_eoi = Grammar.Entry.parse doc_eoi ;
+value parse_docs = Grammar.Entry.parse docs ;
+value parse_docs_eoi = Grammar.Entry.parse docs_eoi ;
 
 value parse_string pf s =
   pf (Stream.of_string s)

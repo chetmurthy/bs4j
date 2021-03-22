@@ -204,9 +204,12 @@ hr:  65    # Home runs
 open Jsonparse
 
 let printer = show_value_
+let docs_printer = show_value_list
 let cmp = equal_value_
+let docs_cmp = equal_value_list
 
-let of_string_exn = parse_string parse_json_eoi
+let of_string_exn = parse_string parse_doc_eoi
+let docs_of_string_exn = parse_string parse_docs_eoi
 
 let parsing = "parsing" >::: [
     "simple" >:: (fun ctxt ->
@@ -410,12 +413,13 @@ Sammy Sosa: {
   }|})
       )
   ; "2.7" >:: (fun ctxt ->
-      warning "example 2.7 has multiple docs: this isn't implemented right" ;
-        assert_equal ~printer
-          (`A (
-              [`String ("Mark McGwire"); `String ("Sammy Sosa"); `String ("Ken Griffey")]
-            ))
-        (of_string_exn {|# Ranking of 1998 home runs
+        assert_equal ~printer:docs_printer
+          [`A (
+              [`String ("Mark McGwire"); `String ("Sammy Sosa"); `String ("Ken Griffey")
+              ]
+            );
+           `A ([`String ("Chicago Cubs"); `String ("St Louis Cardinals")])]
+        (docs_of_string_exn {|# Ranking of 1998 home runs
 ---
 - Mark McGwire
 - Sammy Sosa
