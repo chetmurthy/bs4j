@@ -54,29 +54,55 @@ value lexer = {Plexing.tok_func = lexer;
  Plexing.tok_text = Plexing.lexer_text;
  Plexing.tok_comm = None} ;
 
-type _value =
-  [= `A of list _value
+type value_ =
+  [= `A of list value_
   | `Bool of bool
   | `Float of (float [@equal fun x y -> 0 = compare x y;])
   | `Null
-  | `O of list (string * _value)
+  | `O of list (string * value_)
   | `String of string ] [@@deriving (show,eq);]
 ;
 
 value g = Grammar.gcreate lexer;
-value (json : Grammar.Entry.e _value) = Grammar.Entry.create g "json";
+value (json : Grammar.Entry.e value_) = Grammar.Entry.create g "json";
+value (scalar : Grammar.Entry.e value_) = Grammar.Entry.create g "scalar";
 value json_eoi = Grammar.Entry.create g "json_eoi";
 
+value string_of_scalar = fun [
+  `String s -> s
+| `Float f -> string_of_float f
+| `Null -> ""
+| `Bool True -> "true"
+| `Bool False -> "false"
+| _ -> assert False
+]
+;
+
 EXTEND
-  GLOBAL: json json_eoi ;
+  GLOBAL: json json_eoi scalar ;
   json:
-    [ [ "null" -> `Null
-      | "true" -> `Bool True
-      | "false" -> `Bool False
-      | n=NUMBER -> `Float (float_of_string n)
-      | s=STRING -> `String s
+    [ [ s = scalar -> s
       | "[" ; l = LIST0 json SEP "," ; "]" -> `A l
       | "{" ; l = LIST0 [ s=STRING ; ":" ; v=json -> (s,v) ] SEP "," ; "}" -> `O l
+      | INDENT ; s=scalar ; DEDENT -> s
+      | INDENT ; s=scalar ; ":" ; v=json ;
+        l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ;
+        DEDENT -> `O [(string_of_scalar s,v) :: l]
+      | INDENT ; "-" ; v=json ;
+        l = LIST0 [ "-" ; v=json -> v ] ;
+        DEDENT -> `A [v :: l]
+      | INDENT ; v=json ; DEDENT -> v
+    ] ]
+  ;
+
+  scalar:
+    [ [ s = RAWSTRING -> `String s
+      | s = YAMLSTRING -> `String s
+      | s = STRING -> `String s
+      | n = NUMBER -> `Float (float_of_string n)
+      | "null" -> `Null
+      | "true" -> `Bool True
+      | "false" -> `Bool False
     ] ]
   ;
 

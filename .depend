@@ -1,6 +1,14 @@
 lextest.cmo : \
-    jsontoken.cmo
+    jsontoken.cmo \
+    jsonparse.cmo
 lextest.cmx : \
-    jsontoken.cmx
+    jsontoken.cmx \
+    jsonparse.cmx
 yamltest.cmo :
 yamltest.cmx :
+jsontoken.cmo :
+jsontoken.cmx :
+jsonparse.cmo : \
+    jsontoken.cmo
+jsonparse.cmx : \
+    jsontoken.cmx

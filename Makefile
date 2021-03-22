@@ -10,12 +10,12 @@ all: $(OBJ) yamltest lextest
 yamltest: yamltest.cmo
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -linkpkg -linkall -syntax camlp5r $^ -o $@
 
-lextest: jsontoken.cmo lextest.cmo
+lextest: jsontoken.cmo jsonparse.cmo lextest.cmo
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -linkpkg -linkall -syntax camlp5r $^ -o $@
 
 test:: all
 	mkdir -p _build
-	./lextest
+	./lextest -runner sequential
 #	./yamltest
 
 .SUFFIXES: .mll .ml .cmo .cmx
@@ -42,7 +42,8 @@ clean:
 
 depend::
 	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5o yamltest.ml lextest.ml > .depend.NEW || true
-#	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5r yamlparser.ml >> .depend.NEW
+	$(OCAMLFIND) ocamldep $(DEBUG) -package sedlex.ppx jsontoken.ml >> .depend.NEW || true
+	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5r jsonparse.ml >> .depend.NEW
 	mv .depend.NEW .depend
 
 -include .depend
