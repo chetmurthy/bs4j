@@ -288,6 +288,17 @@ a:
 # foo
 a
 |})
+    )
+  ; "2.1" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`A (
+              [`String ("Mark McGwire")
+              ; `String ("Sammy Sosa")
+              ; `String ("Ken Griffey")]
+            ))
+          (parse1 {|- Mark McGwire
+- Sammy Sosa
+- Ken Griffey|})
       )
   ]
 
