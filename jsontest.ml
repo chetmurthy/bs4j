@@ -1202,16 +1202,17 @@ Y' 1st non-empty
           ))
         (of_string_exn {|
 implicit block key : [
-  implicit flow key : value,
+  implicit flow key : value
  ]|})
       )
   ; "7.12" >:: (fun ctxt ->
       assert_equal ~printer
         (`String ("1st non-empty\n2nd non-empty 3rd non-empty"))
-        (of_string_exn {|1st non-empty
+        (of_string_exn {|
+ Y"1st non-empty
 
- 2nd non-empty 
-	3rd non-empty|})
+   2nd non-empty 
+   3rd non-empty"|})
       )
   ; "7.13" >:: (fun ctxt ->
       assert_equal ~printer
@@ -1219,7 +1220,7 @@ implicit block key : [
             [`A ([`String ("one"); `String ("two")]);
              `A ([`String ("three"); `String ("four")])]
           ))
-        (of_string_exn {|- [ one, two, ]
+        (of_string_exn {|- [ one, two ]
 - [three ,four]|})
       )
   ; "7.14" >:: (fun ctxt ->
@@ -1230,12 +1231,12 @@ implicit block key : [
              `O ([("single", `String ("pair"))])]
           ))
         (of_string_exn {|[
-"double
- quoted", 'single
+Y"double
+ quoted", Y'single
            quoted',
 plain
  text, [ nested ],
-single: pair,
+single: pair
 ]|})
       )
   ; "7.15" >:: (fun ctxt ->
@@ -1245,20 +1246,8 @@ single: pair,
              `O ([("five", `String ("six")); ("seven", `String ("eight"))])]
           ))
         (of_string_exn {|
-- { one : two , three: four , }
+- { one : two , three: four }
 - {five: six,seven : eight}|})
-      )
-  ; "7.16" >:: (fun ctxt ->
-      assert_equal ~printer
-        (`O (
-            [("explicit", `String ("entry")); ("implicit", `String ("entry"));
-             ("", `Null)]
-          ))
-        (of_string_exn {|{
-? explicit: entry,
-implicit: entry,
-?
-}|})
       )
   ; "7.17" >:: (fun ctxt ->
       assert_equal ~printer

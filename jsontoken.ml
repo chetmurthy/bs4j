@@ -127,7 +127,7 @@ let yamlscalar_endchar = [%sedlex.regexp? Sub (yamlscalar_char, linews) ]
 let yamlscalar = [%sedlex.regexp?  yamlscalar_endchar, Opt (Star yamlscalar_char, yamlscalar_endchar) ]
 
 let yaml_basic_string_char = [%sedlex.regexp? 0x9 | 0x20 .. 0x10ffff ]
-let yaml_unescaped_sqstring_char = [%sedlex.regexp? Sub(yaml_basic_string_char, '\'')  ]
+let yaml_unescaped_sqstring_char = [%sedlex.regexp? Sub((yaml_basic_string_char | '\n'), '\'')  ]
 let yaml_sqstring = [%sedlex.regexp?  "Y'" , (Star (yaml_unescaped_sqstring_char | "''")) , "'" ]
 
 let yaml_basic_dqstring_char = [%sedlex.regexp? Sub(yaml_basic_string_char, ('"' | '\\')) ]
@@ -209,9 +209,22 @@ let unquote_yaml_sqstring s =
     | _ -> failwith "unquote_sqstring: unexpected character"
   and unrec1 () =
     match%sedlex lb with
-    | Plus yaml_unescaped_sqstring_char -> 
+    | Sub(yaml_unescaped_sqstring_char, (linews|'\n')), Opt(Star (Sub(yaml_unescaped_sqstring_char,'\n')), Sub(yaml_unescaped_sqstring_char, (linews|'\n'))) -> 
       Buffer.add_string buf (Sedlexing.Latin1.lexeme lb) ;
       unrec1 ()
+
+    | Star linews, "\n", Star linews ->
+      Buffer.add_char buf ' ' ;
+      unrec1 ()
+
+    | Plus(Star linews, "\n", Star linews) ->
+      Buffer.add_char buf '\n' ;
+      unrec1 ()
+
+    | Plus linews ->
+      Buffer.add_string buf (Sedlexing.Latin1.lexeme lb) ;
+      unrec1 ()
+
     | "''" ->
       Buffer.add_char buf '\'' ;
       unrec1 ()

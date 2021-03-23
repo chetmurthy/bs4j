@@ -144,9 +144,15 @@ EXTEND
     [ [ s = RAWSTRING ->
         let indent = Ploc.first_pos loc - Ploc.bol_pos loc in
         `String (unquote_rawstring ~{fold=False} indent s)
+
+      | ">"; s = RAWSTRING ->
+        let indent = Ploc.first_pos loc - Ploc.bol_pos loc in
+        `String (unquote_rawstring ~{fold=True} indent s)
+
       | ">" ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
         `String (unquote_rawstring ~{fold=True} indent s)
+
       | "|" ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
         `String (unquote_rawstring ~{fold=False} indent s)
