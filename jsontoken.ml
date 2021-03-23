@@ -130,7 +130,7 @@ let yaml_basic_string_char = [%sedlex.regexp? 0x9 | 0x20 .. 0x10ffff ]
 let yaml_unescaped_sqstring_char = [%sedlex.regexp? Sub(yaml_basic_string_char, '\'')  ]
 let yaml_sqstring = [%sedlex.regexp?  "Y'" , (Star (yaml_unescaped_sqstring_char | "''")) , "'" ]
 
-let yaml_basic_dqstring_char = [%sedlex.regexp? Sub(yaml_basic_string_char, ('"' | "\\")) ]
+let yaml_basic_dqstring_char = [%sedlex.regexp? Sub(yaml_basic_string_char, ('"' | '\\')) ]
 let yaml_dqstring_escaped_char = [%sedlex.regexp? "\\",
                                          ( "0" (* ns-esc-null *)
                                          | "a" (* ns-esc-bell *)
@@ -249,14 +249,14 @@ let unquote_yaml_dqstring s =
     | "\\", '_' (*ns-esc-non-breaking-space *) -> Buffer.add_char buf '\xa0' ; unrec1 ()
     | "\\", "L" (* ns-esc-line-separator *) -> Buffer.add_utf_8_uchar buf (Uchar.of_int 0x2028) ; unrec1 ()
     | "\\", "P" (* ns-esc-paragraph-separator *) -> Buffer.add_utf_8_uchar buf (Uchar.of_int 0x2029) ; unrec1 ()
-    | "\\", ( "x" , Rep(hexdigit,2)) (* ns-esc-8-bit *) ->
+    | "\\", "x" , Rep(hexdigit,2) (* ns-esc-8-bit *) ->
       let n = int_of_string ("0x"^(String.sub (Sedlexing.Latin1.lexeme lb) 2 2)) in
       Buffer.add_utf_8_uchar buf (Uchar.of_int n) ; unrec1 ()
-    | "\\", ( "u" , Rep(hexdigit,4)) (* ns-esc-16-bit *) ->
+    | "\\", "u" , Rep(hexdigit,4) (* ns-esc-16-bit *) ->
       let n = int_of_string ("0x"^(String.sub (Sedlexing.Latin1.lexeme lb) 2 4)) in
       Buffer.add_utf_8_uchar buf (Uchar.of_int n) ; unrec1 ()
 
-    | "\\", ( "U" , Rep(hexdigit,8)) (* ns-esc-32-bit *) ->
+    | "\\", "U" , Rep(hexdigit,8) (* ns-esc-32-bit *) ->
       let n = int_of_string ("0x"^(String.sub (Sedlexing.Latin1.lexeme lb) 2 8)) in
       Buffer.add_utf_8_uchar buf (Uchar.of_int n) ; unrec1 ()
 
@@ -343,7 +343,7 @@ let fold_lines l =
 let unquote_rawstring ~fold indent s =
   let sofs = (String.index s '(') + 1 in
   let indent = indent + sofs in
-  let eofs = (String.index s ')') in
+  let eofs = (String.rindex s ')') in
   if sofs = eofs then "" else
   let s = String.sub s sofs (eofs-sofs) in
   let l = String.split_on_char '\n' s in

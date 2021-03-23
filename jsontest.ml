@@ -14,6 +14,7 @@ let assert_raises_exn_pattern pattern f =
   Testutil.assert_raises_exn_pred
     (function
         Failure msg when matches ~pattern msg -> true
+      | Ploc.Exc(_, Failure msg) when matches ~pattern msg -> true
       | Invalid_argument msg when matches ~pattern msg -> true
       | _ -> false
     )
@@ -827,7 +828,7 @@ comments:
              `A (
                [`O (
                    [("file", `String ("TopClass.py")); ("line", `Float (23.));
-                    ("code", `String ("x = MoreObject(\"345\\n\""))]
+                    ("code", `String ("x = MoreObject(\"345\\n\")"))]
                  );
                 `O (
                   [("file", `String ("MoreClass.py")); ("line", `Float (58.));
@@ -868,11 +869,114 @@ Stack:
       )
   ]
 
+let characters = "characters" >::: [
+    "5.3" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("sequence", `A ([`String ("one"); `String ("two")]));
+             ("mapping", `O ([("sky", `String ("blue")); ("sea", `String ("green"))]))
+            ]
+          ))
+        (of_string_exn {|sequence:
+  - one
+  - two
+mapping:
+  sky:
+    blue
+  sea : green|})
+      )
+  ; "5.4" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("sequence", `A ([`String ("one"); `String ("two")]));
+             ("mapping", `O ([("sky", `String ("blue")); ("sea", `String ("green"))]))
+            ]
+          ))
+        (of_string_exn {|
+sequence: [ one, two ]
+mapping: { sky: blue, sea: green }|})
+      )
+  ; "5.7" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("literal", `String ("some\ntext\n")); ("folded", `String ("some text"))]))
+        (of_string_exn {|literal: |
+  R"(some
+     text
+     )"
+folded: >
+  R"(some
+     text)"|})
+      )
+  ; "5.8" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O ([("single", `String ("text")); ("double", `String ("text"))]))
+        (of_string_exn {|
+single: Y'text'
+double: "text"|})
+      )
+  ; "5.9" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("text"))
+        (of_string_exn {|
+--- text|})
+      )
+  ; "5.10" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("commercial-at", `String ("@text")); ("grave-accent", `String ("`text"))]
+          ))
+        (of_string_exn {|"commercial-at": @text
+"grave-accent": `text|})
+      )
+  ; "5.11" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("Line break (no glyph)\nLine break (glyphed)\n"))
+        (of_string_exn {||
+  R"(Line break (no glyph)
+     Line break (glyphed)
+     )"
+|})
+      )
+  ; "5.12" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("quoted", `String ("Quoted \t"));
+             ("block", `String ("void main() {\n\
+                                 \tprintf(\"Hello, world!\\n\");\n\
+                                 }"))]
+          ))
+        (of_string_exn {|# Tabs and spaces
+quoted: Y"Quoted 	"
+block:	|
+  R"(void main() {
+     	printf("Hello, world!\n");
+     })"|})
+      )
+  ; "5.13" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("Fun with \\ \" \007 \b \027 \012 \n \r \t \011 \000   \160 \133 \226\128\168 \226\128\169 A A A"))
+        (of_string_exn {|Y"Fun with \\
+\" \a \b \e \f
+\n \r \t \v \0
+\  \_ \N \L \P
+\x41 \u0041 \U00000041"|})
+      )
+  ; "5.14" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "Unexpected character"
+        (fun () -> of_string_exn {|Bad escapes:
+  "\c
+  \xq-"|})
+      )
+
+  ]
 
 let tests = "all" >::: [
     lexing
   ; parsing
   ; preview
+  ; characters
 ]
 
 if not !Sys.interactive then
