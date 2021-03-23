@@ -142,7 +142,7 @@ EXTEND
     [ [ s = RAWSTRING ->
         let indent = Ploc.first_pos loc - Ploc.bol_pos loc in
         `String (unquote_rawstring ~{fold=False} indent s)
-      | ">" ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
+      | ">" ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
         `String (unquote_rawstring ~{fold=True} indent s)
       | l = LIST1 [ s = YAMLSTRING -> s ] -> `String (String.concat " " l)

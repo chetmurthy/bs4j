@@ -145,9 +145,10 @@ let yaml_dqstring_escaped_char = [%sedlex.regexp? "\\",
                                          | ( "x" , Rep(hexdigit,2)) (* ns-esc-8-bit *)
                                          | ( "u" , Rep(hexdigit,4)) (* ns-esc-16-bit *)
                                          | ( "U" , Rep(hexdigit,8)) (* ns-esc-32-bit *) ) ]
-let yaml_dqstring_linebreak = [%sedlex.regexp? "\\", "\n", Star(' '), Opt("\\") ]
+let yaml_dqstring_linebreak_1 = [%sedlex.regexp? ("\\", "\n", Star(' '), Opt("\\")) ]
+let yaml_dqstring_linebreak_2 = [%sedlex.regexp? ("\n" , Star(' ')) ]
 let yaml_dqstring_char = [%sedlex.regexp? (yaml_basic_dqstring_char | yaml_dqstring_escaped_char ) ]
-let yaml_dqstring = [%sedlex.regexp? "Y\"" , (Star (yaml_dqstring_char | yaml_dqstring_linebreak)), '"' ]
+let yaml_dqstring = [%sedlex.regexp? "Y\"" , (Star (yaml_dqstring_char | yaml_dqstring_linebreak_1 | yaml_dqstring_linebreak_2)), '"' ]
 
 let comment = [%sedlex.regexp? '#' , Star(Compl '\n') ]
 
@@ -181,12 +182,17 @@ let unquote_string s =
 
     | _ -> failwith "unquote_string: internal error"
   in unrec0 ()
-
-let lex_re lb =
+(*
+let lex_re1 lb =
   match%sedlex lb with
-    Plus yaml_unescaped_sqstring_char -> Sedlexing.Latin1.lexeme lb
+    Plus yaml_dqstring_linebreak_1 -> Sedlexing.Latin1.lexeme lb
   | _ -> failwith "lex_re: failed"
 
+let lex_re2 lb =
+  match%sedlex lb with
+    Plus yaml_dqstring_char -> Sedlexing.Latin1.lexeme lb
+  | _ -> failwith "lex_re: failed"
+*)
 let unquote_yaml_sqstring s =
   let buf = Buffer.create (String.length s) in
   let lb = Sedlexing.Latin1.from_gen (gen_of_string s) in
@@ -247,8 +253,13 @@ let unquote_yaml_dqstring s =
       let n = int_of_string ("0x"^(String.sub (Sedlexing.Latin1.lexeme lb) 2 8)) in
       Buffer.add_utf_8_uchar buf (Uchar.of_int n) ; unrec1 ()
 
-    | yaml_dqstring_linebreak ->
+    | yaml_dqstring_linebreak_1 ->
       unrec1 ()
+
+    | yaml_dqstring_linebreak_2 ->
+      Buffer.add_char buf ' ' ;
+      unrec1 ()
+
     | '"' -> Buffer.contents buf
     | _ -> failwith "unquote_dqstring: unexpected character"
   in unrec0 ()
@@ -324,6 +335,7 @@ let fold_lines l =
 
 let unquote_rawstring ~fold indent s =
   let sofs = (String.index s '(') + 1 in
+  let indent = indent + sofs in
   let eofs = (String.index s ')') in
   if sofs = eofs then "" else
   let s = String.sub s sofs (eofs-sofs) in
@@ -459,21 +471,19 @@ and rawstring3 (spos, id, acc) ofs st =
       rawstring2 (spos, id, acc) st
   | _ -> failwith "rawstring3: unexpected character"
 
-let rawstring1 (id,acc) st =
+let rawstring1 (spos, id,acc) st =
   let open St in
   let pos() = Sedlexing.lexing_positions st.lexbuf in
   let buf = st.lexbuf in
   match%sedlex buf with
   | "(" ->
-    let (_, epos) = pos() in
     Buffer.add_string acc "(" ;
-    rawstring2 (epos, id, acc) st
+    rawstring2 (spos, id, acc) st
   | _ -> failwith "rawstring1: unexpected character"
 
 
-let rawstring0 st =
+let rawstring0 spos st =
   let open St in
-  let pos() = Sedlexing.lexing_positions st.lexbuf in
   let buf = st.lexbuf in
   match%sedlex buf with
   | Opt ident ->
@@ -482,7 +492,7 @@ let rawstring0 st =
     let acc = Buffer.create 23 in
     Buffer.add_string acc "R\"" ;
     Buffer.add_string acc id ;
-    rawstring1 (uni_id,acc) st
+    rawstring1 (spos, uni_id,acc) st
   | _ -> failwith "rawstring0: unexpected character"
 
 let rec rawtoken st =
@@ -495,7 +505,8 @@ let rec rawtoken st =
   | yaml_sqstring -> (YAMLSQSTRING (Sedlexing.Latin1.lexeme buf),pos())
   | yaml_dqstring -> (YAMLDQSTRING (Sedlexing.Latin1.lexeme buf),pos())
   | "R\"" ->
-    rawstring0 st
+    let (spos, _) = pos() in
+    rawstring0 spos st
   | "[" -> (LBRACKET, pos())
   | "]" -> (RBRACKET, pos())
   | "{" -> (LBRACE,pos())
@@ -535,9 +546,7 @@ let rec jsontoken st =
       | (RBRACE, _) -> failwith "jsontoken: '}' found in block style"
       | (LBRACE, _) as t -> St.push_flow st ; t
       | (COLON, _) as t -> t
-      | (RAWSTRING _, _) as t -> t
-      | (YAMLSQSTRING _, _) as t -> t
-      | (YAMLDQSTRING _, _) as t -> t
+      | (GT, _) as t -> t
       | (NEWLINE, _) -> St.set_bol st true ; jsontoken st
       | t -> handle_indents_with st t
   end

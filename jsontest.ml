@@ -151,8 +151,8 @@ R"a(foo)a"
       )
   ; "rawstring-1" >:: (fun ctxt ->
         assert_equal ~printer
-          [RAWSTRING {|R"(foo)"|};
-           EOF]
+          [(INDENT (0, 2)); RAWSTRING {|R"(foo)"|};
+           (DEDENT (0, 2)); EOF]
           (tokens_of_string {|
   R"(foo)"
 |})
@@ -203,10 +203,10 @@ hr:  65    # Home runs
       )
   ; "fold-1" >:: (fun ctxt ->
         assert_equal ~printer
-          [DASHDASHDASH; (INDENT (0, 4)); GT;
+          [DASHDASHDASH; GT; (INDENT (0, 2));
            (RAWSTRING
               "R\"(Mark McGwire's\n     year was crippled\n     by a knee injury.)\"");
-           (DEDENT (0, 4)); EOF]
+           (DEDENT (0, 2)); EOF]
           (tokens_of_string {|--- >
   R"(Mark McGwire's
      year was crippled
@@ -221,42 +221,46 @@ hr:  65    # Home runs
   ; "dqstring-1" >:: (fun ctxt ->
         assert_equal ~printer
           [(YAMLSTRING "unicode"); COLON;
+           (INDENT (0, 9));
            (YAMLDQSTRING "Y\"Sosa did fine.\\u263A\"");
-           EOF]
+           (DEDENT (0, 9)); EOF]
           (tokens_of_string {|unicode: Y"Sosa did fine.\u263A"|})
       )
-  ; "dstring-2" >:: (fun ctxt ->
+  ; "dqstring-2" >:: (fun ctxt ->
         assert_equal ~printer
           [(YAMLSTRING "control"); COLON;
-           (YAMLDQSTRING "Y\"\\b1998\\t1999\\t2000\\n\"");
-           EOF]
+  (INDENT (0, 9));
+  (YAMLDQSTRING "Y\"\\b1998\\t1999\\t2000\\n\"");
+  (DEDENT (0, 9)); EOF]
           (tokens_of_string {|control: Y"\b1998\t1999\t2000\n"|})
       )
   ; "dqstring-3" >:: (fun ctxt ->
         assert_equal ~printer
           [(YAMLSTRING "hex esc"); COLON;
-           (YAMLDQSTRING "Y\"\\x0d\\x0a is \\r\\n\"");
-           EOF]
+  (INDENT (0, 9));
+  (YAMLDQSTRING "Y\"\\x0d\\x0a is \\r\\n\"");
+  (DEDENT (0, 9)); EOF]
           (tokens_of_string {|hex esc: Y"\x0d\x0a is \r\n"|})
       )
   ; "sqstring-1" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSTRING "single"); COLON;
-           (YAMLSQSTRING "Y'\"Howdy!\" he cried.'");
-           EOF]
+          [(YAMLSTRING "single"); COLON; (INDENT (0, 8));
+  (YAMLSQSTRING "Y'\"Howdy!\" he cried.'");
+  (DEDENT (0, 8)); EOF]
           (tokens_of_string {|single: Y'"Howdy!" he cried.'|})
       )
   ; "sqstring-2" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSTRING "quoted"); COLON; 
-           (YAMLSQSTRING "Y' # Not a ''comment''.'");
-           EOF]
+          [(YAMLSTRING "quoted"); COLON; (INDENT (0, 8));
+  (YAMLSQSTRING "Y' # Not a ''comment''.'");
+  (DEDENT (0, 8)); EOF]
           (tokens_of_string {|quoted: Y' # Not a ''comment''.'|})
       )
   ; "sqstring-3" >:: (fun ctxt ->
         assert_equal ~printer
           [(YAMLSQSTRING "Y'tie-fighter'"); COLON;
-           (YAMLSQSTRING "Y'|\\-*-/|'"); EOF]
+  (INDENT (0, 16)); (YAMLSQSTRING "Y'|\\-*-/|'");
+  (DEDENT (0, 16)); EOF]
           (tokens_of_string {|Y'tie-fighter': Y'|\-*-/|'|})
       )
   ]
@@ -630,7 +634,7 @@ Y'tie-fighter': Y'|\-*-/|'|})
   This unquoted scalar
   spans many lines.
 
-quoted: "So does this
+quoted: Y"So does this
   quoted scalar.\n"
 |})
       )
