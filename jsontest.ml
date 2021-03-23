@@ -1057,6 +1057,7 @@ Chomping:
   R"(trimmed
      
 
+
      as
      space)"|})
       )
@@ -1303,6 +1304,359 @@ foo
       )
   ]
 
+let block_styles = "block styles" >::: [
+    "8.1" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A (
+            [`String ("literal\n"); `String (" folded\n"); `String ("keep\n\n");
+             `String (" strip")]
+          ))
+        (of_string_exn {|
+- # Empty header
+ R"(literal
+    )"
+- # Indentation indicator
+ R"( folded
+    )"
+- # Chomping indicator
+ R"(keep
+
+    )"
+- # Both indicators
+  R"( strip)"
+|})
+      )
+  ; "8.2" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A [`String"detected\n"; `String"\n\n# detected\n"; `String" explicit\n"; `String"\t detected\n"])
+        (of_string_exn {|-
+ R"(detected
+    )"
+-
+ R"(
+    
+    # detected
+    )"
+-
+ R"( explicit
+    )"
+- >
+ R"(	
+    detected
+    )"|})
+      )
+  ; "8.3" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "dedent did not move back to previous indent position"
+        (fun () -> of_string_exn {|-
+  
+ text
+-
+  text
+ text
+-
+ text|})
+      )
+  ; "8.4" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("strip", `String ("text")); ("clip", `String ("text\n"));
+             ("keep", `String ("text\n"))]
+          ))
+        (of_string_exn {|strip:
+  text
+clip:
+  R"(text
+     )"
+keep:
+  R"(text
+     )"
+|})
+      )
+  ; "8.5" >:: (fun ctxt ->
+      warning "example 8.5 not handled correctly by ocaml-yaml (trailing \\n)" ;
+      assert_equal ~printer
+        (`O (
+            [("strip", `String ("# text")); ("clip", `String ("# text\n"));
+             ("keep", `String ("# text\n"))]
+          ))
+        (of_string_exn {| # Strip
+  # Comments:
+strip:
+  "# text"
+  
+ # Clip
+  # comments:
+
+clip:
+  R"(# text
+     )"
+ 
+ # Keep
+  # comments:
+
+keep:
+  R"(# text
+     )"
+
+ # Trail
+  # comments.|})
+      )
+  ; "8.6" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("strip", `String ("")); ("clip", `String ("")); ("keep", `String ("\n"))]
+          ))
+        (of_string_exn {|
+strip: ""
+
+clip: ""
+
+keep: "\n"
+
+|})
+      )
+  ; "8.7" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("literal\n\ttext\n"))
+        (of_string_exn {|
+ R"(literal
+    	text
+    )"
+
+|})
+      )
+  ; "8.8" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("\n\nliteral\n \n\ntext\n"))
+        (of_string_exn {|
+|
+ R"(
+    
+    literal
+     
+
+    text
+    )"
+ # Comment|})
+      )
+  ; "8.9" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("folded text\n"))
+        (of_string_exn {|>
+ R"(folded
+    text
+    )"
+
+|})
+      )
+  ; "8.10" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String (
+      "\n\
+      folded line\n\
+      next line\n\
+      \  * bullet\n\
+      \n\
+      \  * list\n\
+      \  * lines\n\
+      \n\
+      last line\n"
+          ))
+        (of_string_exn {|>
+
+ R"(
+    folded
+    line
+
+    next
+    line
+      * bullet
+
+      * list
+      * lines
+
+    last
+    line
+    )"
+
+# Comment|})
+      )
+  ; "8.11" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`String (
+      "\n\
+      folded line\n\
+      next line\n\
+      \  * bullet\n\
+      \n\
+      \  * list\n\
+      \  * lines\n\
+      \n\
+      last line\n"
+  ))
+        (of_string_exn {|>
+
+ folded
+ line
+
+ next
+ line
+   * bullet
+
+   * list
+   * lines
+
+ last
+ line
+
+# Comment|})
+      )
+  ; "8.12" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String (
+      "\n\
+      folded line\n\
+      next line\n\
+      \  * bullet\n\
+      \n\
+      \  * list\n\
+      \  * line\n\
+      \n\
+      last line\n"
+          ))
+        (of_string_exn {|>
+
+ folded
+ line
+
+ next
+ line
+   * bullet
+
+   * list
+   * line
+
+ last
+ line
+
+# Comment|})
+      )
+  ; "8.13" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String (
+      "\n\
+      folded line\n\
+      next line\n\
+      \  * bullet\n\
+      \n\
+      \  * list\n\
+      \  * line\n\
+      \n\
+       last line\n"
+    ))
+        (of_string_exn {|>
+
+ folded
+ line
+
+ next
+ line
+   * bullet
+
+   * list
+   * line
+
+ last
+ line
+
+# Comment|})
+      )
+  ; "8.14" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("block sequence",
+              `A ([`String ("one"); `O ([("two", `String ("three"))])]))]
+          ))
+        (of_string_exn {|block sequence:
+  - one
+  - two : three
+|})
+      )
+  ; "8.15" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A (
+            [`Null; `String ("block node\n"); `A ([`String ("one"); `String ("two")]);
+             `O ([("one", `String ("two"))])]
+          ))
+        (of_string_exn {|
+- # Empty
+- |
+ block node
+- - one # Compact
+  - two # sequence
+- one: two # Compact mapping|})
+      )
+  ; "8.16" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O ([("block mapping", `O ([("key", `String ("value"))]))]))
+        (of_string_exn {|block mapping:
+ key: value
+|})
+      )
+  ; "8.17" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("explicit key", `Null);
+             ("block key\n", `A ([`String ("one"); `String ("two")]))]
+          ))
+        (of_string_exn {|
+? explicit key # Empty value
+? |
+  block key
+: - one # Explicit compact
+  - two # block value
+|})
+      )
+  ; "8.20" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A (
+            [`String ("flow in block"); `String ("Block scalar\n");
+             `O ([("foo", `String ("bar"))])]
+          ))
+        (of_string_exn {|-
+  "flow in block"
+- >
+ Block scalar
+- # Block collection
+  foo : bar
+|})
+      )
+  ; "8.21" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O ([("literal", `String ("value\n")); ("folded", `String ("value"))]))
+        (of_string_exn {|literal: |2
+  value
+folded:
+   !foo
+  >1
+ value|})
+      )
+  ; "8.22" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("sequence", `A ([`String ("entry"); `A ([`String ("nested")])]));
+             ("mapping", `O ([("foo", `String ("bar"))]))]
+          ))
+        (of_string_exn {|sequence: !!seq
+- entry
+- !!seq
+ - nested
+mapping: !!map
+ foo: bar|})
+      )
+  ]
+
 let tests = "all" >::: [
     lexing
   ; parsing
@@ -1310,6 +1664,7 @@ let tests = "all" >::: [
   ; characters
   ; basic_structures
   ; flow_styles
+  ; block_styles
 ]
 
 if not !Sys.interactive then

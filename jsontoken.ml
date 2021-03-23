@@ -319,43 +319,66 @@ let consume_indent n s =
     String.sub s n (slen - n)
   else failwith "consume_indent"
 
-let fold_exceptions s =
-  if s = "" then "\n"
-  else if String.get s 0 = ' ' then s^"\n"
-  else s
+type linetype_t = MT | SP | TXT
+let classify = function
+    "" -> MT
+  | s when String.get s 0 = ' ' -> SP
+  | _ -> TXT
+
+let group l =
+  let rec grec acc (cls,sofaracc) = function
+      [] -> List.rev ((cls,List.rev sofaracc)::acc)
+    | h::t ->
+      if classify h = cls then grec acc (cls,h::sofaracc) t
+      else grec ((cls,List.rev sofaracc)::acc) (classify h,[h]) t
+  in match l with
+    [] -> []
+  | h::t -> grec [] (classify h, [h]) t
+
+let newlines l =
+  String.concat "\n" (l@[""])
+
+  let rec frec acc = function
+      [] -> List.rev acc
+
+    | (MT,_)::(MT,_)::_ -> assert false
+    | (SP,_)::(SP,_)::_ -> assert false
+    | (TXT,_)::(TXT,_)::_ -> assert false
+    | (TXT,_)::(MT,_)::(MT,_)::_ -> assert false
+    | (TXT,_)::(SP,_)::(SP,_)::_ -> assert false
+    | (SP,_)::(TXT,_)::(TXT,_)::_ -> assert false
+    | (SP,_)::(MT,_)::(MT,_)::_ -> assert false
+    | (MT,_)::(TXT,_)::(TXT,_)::_ -> assert false
+    | (MT,_)::(SP,_)::(SP,_)::_ -> assert false
+
+    | (MT,l)::[] ->
+      List.rev ((newlines l)::acc)
+    | (TXT,l)::[] ->
+      List.rev ((String.concat " " l)::acc)
+    | (SP,l)::tl ->
+      frec ((newlines l)::acc) tl
+
+    | (MT,l)::((TXT,_)::_ as tl) ->
+      frec ((newlines l)::acc) tl
+    | (MT,l)::((SP,_)::_ as tl) ->
+      frec ((newlines (""::l))::acc)  tl
+
+    | (TXT,l1)::(MT,l2)::((TXT,_)::_ as tl) ->
+      frec ("\n"::(String.concat " " l1)::acc) tl
+    | (TXT,l1)::(MT,l2)::[] ->
+      List.rev ("\n"::(String.concat " " l1)::acc)
+    | (TXT,l1)::(((MT|SP),_)::_ as tl) ->
+      frec ((String.concat " " l1)::acc) tl
+
+
+let fold_groups l =
+String.concat "" (frec [] l)
 
 let fold_lines l =
-  let buf = Buffer.create 23 in
-  let rec frec = function
-      [] -> Buffer.contents buf
-    | l1::tl when l1 <> "" && String.get l1 0 = ' ' ->
-      Buffer.add_string buf l1 ;
-      Buffer.add_string buf "\n" ;
-      frec tl
+  let l = group l in
+  fold_groups l
 
-    | ""::l2::tl ->
-      Buffer.add_string buf "\n" ;
-      frec (l2::tl)
-
-    | l1::l2::tl when l2 <> "" ->
-      Buffer.add_string buf l1 ;
-      Buffer.add_string buf " " ;
-      frec (l2::tl)
-
-    | l1::l2::tl when l2 = "" ->
-      Buffer.add_string buf l1 ;
-      Buffer.add_string buf "\n" ;
-      frec (l2::tl)
-
-    | l1::tl when l1 <> "" ->
-      Buffer.add_string buf l1 ;
-      frec tl
-    | [""] ->
-      Buffer.add_string buf "\n" ;
-      frec []
-  in frec l
-
-let fold_lines l =
+let fold_lines0 l =
   let rec frec = function
 
     | l1::l2::tl when l1 <> "" && l2 <> "" && String.get l1 0 <> ' ' && String.get l2 0 <> ' ' ->

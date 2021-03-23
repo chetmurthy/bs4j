@@ -32,8 +32,11 @@ open Jsonparse ;;
 
 #trace St.pop_styles ;;
 #trace jsontoken ;;
+#trace indentspaces ;;
 #trace rawtoken ;;
 #trace unquote_rawstring ;;
+#trace group;;
+#trace fold_groups;;
 #trace fold_lines;;
 #trace consume_indent;;
 
