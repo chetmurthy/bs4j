@@ -652,12 +652,6 @@ octal: 0o14
 hexadecimal: 0xC
 |})
       )
-  ]
-
-let preview2 = "preview2" >::: [
-    "mt" >:: (fun ctxt ->
-        ()
-      )
   ; "2.20" >:: (fun ctxt ->
       assert_equal ~printer
         ~cmp
@@ -672,6 +666,12 @@ exponential: 12.3015e+02
 fixed: 1230.15
 negative infinity: -.inf
 not a number: .NaN|})
+      )
+  ]
+
+let preview2 = "preview2" >::: [
+    "mt" >:: (fun ctxt ->
+        ()
       )
   ; "2.21" >:: (fun ctxt ->
       assert_equal ~printer

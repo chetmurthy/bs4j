@@ -151,7 +151,10 @@ EXTEND
       | s = STRING -> `String (unquote_string s)
       | s=YAMLSQSTRING -> `String (unquote_yaml_sqstring s)
       | s=YAMLDQSTRING -> `String (unquote_yaml_dqstring s)
-      | n = DECIMAL -> `Float (float_of_string n)
+      | n = DECIMAL -> `Float (if n = ".NaN" then nan
+                               else if n = ".inf" then infinity
+                               else if n = "-.inf" then neg_infinity
+                               else float_of_string n)
       | n = HEXADECIMAL -> `Float (float_of_int (int_of_string n))
       | n = OCTAL -> `Float (float_of_int (int_of_string n))
       | "null" -> `Null
