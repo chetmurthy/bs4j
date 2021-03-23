@@ -972,11 +972,149 @@ block:	|
 
   ]
 
+let basic_structures = "basic structures" >::: [
+    "6.1" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("Not indented",
+              `O (
+                [("By one space", `String ("By four\n  spaces\n"));
+                 ("Flow style",
+                  `A (
+                    [`String ("By two"); `String ("Also by two");
+                     `String ("Still by two")]
+                  ))
+                ]
+              ))
+            ]
+          ))
+        (of_string_exn {|  # Leading comment line spaces are
+   # neither content nor indentation.
+    
+Not indented:
+ By one space: |
+    R"(By four
+         spaces
+       )"
+ Flow style: [    # Leading spaces
+   By two,        # in flow style
+  Also by two,    # are neither
+  	Still by two   # content nor
+    ]             # indentation.|})
+      )
+  ; "6.2" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O ([("a", `A ([`String ("b"); `A ([`String ("c"); `String ("d")])]))]))
+        (of_string_exn "\n\
+a:\n\
+\  -\tb\n\
+\  -  -\tc\n\
+\     - d")
+      )
+  ; "6.3" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A (
+            [`O ([("foo", `String ("bar"))]); `A ([`String ("baz"); `String ("baz")])]))
+        (of_string_exn "- foo:\t bar\n\
+                        - - baz\n\
+                       \  -\tbaz")
+      )
+  ; "6.4" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("plain", `String ("text lines")); ("quoted", `String ("text lines"));
+             ("block", `String ("text\n \tlines"))]
+          ))
+        (of_string_exn {|
+plain: text
+       lines
+quoted: Y"text
+  	lines"
+block: |
+  R"(text
+      	lines)"|})
+      )
+  ; "6.5" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("Folding", `String ("Empty line\nas a line feed"));
+             ("Chomping", `String ("Clipped empty lines\n"))]
+          ))
+        (of_string_exn {|
+Folding:
+  Y"Empty line
+   	
+  as a line feed"
+Chomping:
+  R"(Clipped empty lines
+     )"
+ |})
+      )
+  ; "6.6" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`String ("trimmed\n\n\nas space"))
+        (of_string_exn {|>
+  R"(trimmed
+     
+
+     as
+     space)"|})
+      )
+  ; "6.7" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("foo \n\n\t bar\n\nbaz\n"))
+        (of_string_exn {|>
+  R"(foo 
+
+     	 bar
+
+     baz
+     )"
+|})
+      )
+  ; "6.8" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String (" foo\nbar\nbaz "))
+        (of_string_exn {|Y"
+  foo 
+ 
+  	 bar
+
+  baz
+"|})
+      )
+  ; "6.9" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O ([("key", `String ("value"))]))
+        (of_string_exn {|key:    # Comment
+  value|})
+      )
+  ; "6.11" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O ([("key", `String ("value"))]))
+        (of_string_exn {|key:    # Comment
+        # lines
+  value
+|})
+      )
+
+  ; "6.28" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A ([`String ("12"); `Float (12.); `Float (12.)]))
+        (of_string_exn {|# Assuming conventional resolution:
+- "12"
+- 12
+- 12|})
+      )
+
+  ]
+
 let tests = "all" >::: [
     lexing
   ; parsing
   ; preview
   ; characters
+  ; basic_structures
 ]
 
 if not !Sys.interactive then

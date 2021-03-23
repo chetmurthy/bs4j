@@ -152,10 +152,10 @@ let yaml_dqstring_escaped_char = [%sedlex.regexp? "\\",
                                          | ( "x" , Rep(hexdigit,2)) (* ns-esc-8-bit *)
                                          | ( "u" , Rep(hexdigit,4)) (* ns-esc-16-bit *)
                                          | ( "U" , Rep(hexdigit,8)) (* ns-esc-32-bit *) ) ]
-let yaml_dqstring_linebreak_1 = [%sedlex.regexp? ("\\", "\n", Star(' '), Opt("\\")) ]
-let yaml_dqstring_linebreak_2 = [%sedlex.regexp? ("\n" , Star(' ')) ]
+let yaml_dqstring_linebreak_1 = [%sedlex.regexp? ("\\", "\n", Star(' '|'\t'), Opt("\\")) ]
+let yaml_dqstring_linebreak_2 = [%sedlex.regexp? ("\n" , Star(' '|'\t')) ]
 let yaml_dqstring_char = [%sedlex.regexp? (yaml_basic_dqstring_char | yaml_dqstring_escaped_char ) ]
-let yaml_dqstring = [%sedlex.regexp? "Y\"" , (Star (yaml_dqstring_char | yaml_dqstring_linebreak_1 | yaml_dqstring_linebreak_2)), '"' ]
+let yaml_dqstring = [%sedlex.regexp? "Y\"" , (Star (yaml_dqstring_char | yaml_dqstring_linebreak_1 | Plus(yaml_dqstring_linebreak_2))), '"' ]
 
 let comment = [%sedlex.regexp? '#' , Star(Compl '\n') ]
 
@@ -228,7 +228,7 @@ let unquote_yaml_dqstring s =
     | _ -> failwith "unquote_dqstring: unexpected character"
   and unrec1 () =
     match%sedlex lb with
-    | Plus yaml_basic_dqstring_char ->
+    | Star yaml_basic_dqstring_char, Sub(yaml_basic_dqstring_char, (' ' | '\t')) ->
       Buffer.add_string buf (Sedlexing.Latin1.lexeme lb) ;
       unrec1 ()
         
@@ -260,15 +260,32 @@ let unquote_yaml_dqstring s =
       let n = int_of_string ("0x"^(String.sub (Sedlexing.Latin1.lexeme lb) 2 8)) in
       Buffer.add_utf_8_uchar buf (Uchar.of_int n) ; unrec1 ()
 
-    | yaml_dqstring_linebreak_1 ->
+    | Star(' ' | '\t'), yaml_dqstring_linebreak_1 ->
       unrec1 ()
 
-    | yaml_dqstring_linebreak_2 ->
-      Buffer.add_char buf ' ' ;
+    | Star(' ' | '\t'), yaml_dqstring_linebreak_2 ->
+      unrec2 1
+
+    | Plus(' '|'\t') ->
+      Buffer.add_string buf (Sedlexing.Latin1.lexeme lb) ;
       unrec1 ()
 
     | '"' -> Buffer.contents buf
     | _ -> failwith "unquote_dqstring: unexpected character"
+
+  and unrec2 nbreaks =
+    match%sedlex lb with
+    | yaml_dqstring_linebreak_2 ->
+      unrec2 (nbreaks+1)
+    | _ ->
+      if nbreaks = 1 then
+        Buffer.add_char buf ' '
+      else 
+        for i = 2 to nbreaks do
+          Buffer.add_char buf '\n'
+        done ;
+      unrec1 ()
+
   in unrec0 ()
 
 let indented n s =
@@ -588,3 +605,8 @@ let lex_string s =
 let lex1 f s =
   let lb = Sedlexing.Latin1.from_gen (gen_of_string s) in
   f lb
+
+let lex2 f s =
+  let lb = Sedlexing.Latin1.from_gen (gen_of_string s) in
+  let st = St.mk lb in
+  f st
