@@ -1055,7 +1055,7 @@ Chomping:
           (`String ("trimmed\n\n\nas space"))
         (of_string_exn {|>
   R"(trimmed
-     
+
 
 
      as
@@ -1063,7 +1063,7 @@ Chomping:
       )
   ; "6.7" >:: (fun ctxt ->
       assert_equal ~printer
-        (`String ("foo \n\n\t bar\n\nbaz\n"))
+        (`String ("foo \n\t bar\nbaz\n"))
         (of_string_exn {|>
   R"(foo 
 
@@ -1496,20 +1496,20 @@ keep: "\n"
       last line\n"
   ))
         (of_string_exn {|>
+ R"(
+    folded
+    line
 
- folded
- line
+    next
+    line
+      * bullet
 
- next
- line
-   * bullet
+      * list
+      * lines
 
-   * list
-   * lines
-
- last
- line
-
+    last
+    line
+    )"
 # Comment|})
       )
   ; "8.12" >:: (fun ctxt ->
@@ -1526,20 +1526,20 @@ keep: "\n"
       last line\n"
           ))
         (of_string_exn {|>
+R"(
+   folded
+   line
 
- folded
- line
+   next
+   line
+     * bullet
 
- next
- line
-   * bullet
+     * list
+     * line
 
-   * list
-   * line
-
- last
- line
-
+   last
+   line
+   )"
 # Comment|})
       )
   ; "8.13" >:: (fun ctxt ->
@@ -1556,20 +1556,20 @@ keep: "\n"
        last line\n"
     ))
         (of_string_exn {|>
+R"(
+   folded
+   line
 
- folded
- line
+   next
+   line
+     * bullet
 
- next
- line
-   * bullet
+     * list
+     * line
 
-   * list
-   * line
-
- last
- line
-
+   last
+   line
+   )"
 # Comment|})
       )
   ; "8.14" >:: (fun ctxt ->
@@ -1591,8 +1591,9 @@ keep: "\n"
           ))
         (of_string_exn {|
 - # Empty
-- |
- block node
+- 
+ R"(block node
+    )"
 - - one # Compact
   - two # sequence
 - one: two # Compact mapping|})

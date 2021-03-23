@@ -338,38 +338,29 @@ let group l =
 let newlines l =
   String.concat "\n" (l@[""])
 
-  let rec frec acc = function
+let rec frec acc = function
       [] -> List.rev acc
 
-    | (MT,_)::(MT,_)::_ -> assert false
-    | (SP,_)::(SP,_)::_ -> assert false
-    | (TXT,_)::(TXT,_)::_ -> assert false
-    | (TXT,_)::(MT,_)::(MT,_)::_ -> assert false
-    | (TXT,_)::(SP,_)::(SP,_)::_ -> assert false
-    | (SP,_)::(TXT,_)::(TXT,_)::_ -> assert false
-    | (SP,_)::(MT,_)::(MT,_)::_ -> assert false
-    | (MT,_)::(TXT,_)::(TXT,_)::_ -> assert false
-    | (MT,_)::(SP,_)::(SP,_)::_ -> assert false
+    | (TXT,l)::((MT,_)::[] as tl) ->
+      frec ((String.concat " " l)::acc) tl
 
-    | (MT,l)::[] ->
-      List.rev ((newlines l)::acc)
+    | (TXT,l)::((MT,_)::(SP,_)::_ as tl) ->
+      frec ("\n"::(String.concat " " l)::acc) tl
+
+    | (TXT,l)::((SP,_)::_ as tl) ->
+      frec ("\n"::(String.concat " " l)::acc) tl
+
+    | (TXT,l)::(_::_ as tl) ->
+      frec ((String.concat " " l)::acc) tl
+
     | (TXT,l)::[] ->
-      List.rev ((String.concat " " l)::acc)
+      frec ((String.concat " " l)::acc) []
+
+    | (MT,l)::tl ->
+      frec ((newlines l)::acc) tl
+
     | (SP,l)::tl ->
       frec ((newlines l)::acc) tl
-
-    | (MT,l)::((TXT,_)::_ as tl) ->
-      frec ((newlines l)::acc) tl
-    | (MT,l)::((SP,_)::_ as tl) ->
-      frec ((newlines (""::l))::acc)  tl
-
-    | (TXT,l1)::(MT,l2)::((TXT,_)::_ as tl) ->
-      frec ("\n"::(String.concat " " l1)::acc) tl
-    | (TXT,l1)::(MT,l2)::[] ->
-      List.rev ("\n"::(String.concat " " l1)::acc)
-    | (TXT,l1)::(((MT|SP),_)::_ as tl) ->
-      frec ((String.concat " " l1)::acc) tl
-
 
 let fold_groups l =
 String.concat "" (frec [] l)
