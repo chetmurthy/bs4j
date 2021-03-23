@@ -120,7 +120,7 @@ EXTEND
         -> `A [v :: l]
 
       | "[" ; l = LIST0 json SEP "," ; "]" -> `A l
-      | "{" ; l = LIST0 [ s= string_scalar ; ":" ; v=json -> (s,v) ] SEP "," ; "}" -> `O l
+      | "{" ; l = LIST0 [ s = scalar ; ":" ; v=json -> (string_of_scalar s,v) ] SEP "," ; "}" -> `O l
       | INDENT ; s=scalar ; DEDENT -> s
       | INDENT ; s=scalar ; ":" ; v=json ;
         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ;

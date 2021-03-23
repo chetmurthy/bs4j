@@ -1108,6 +1108,211 @@ Chomping:
       )
 
   ]
+let flow_styles = "flow styles" >::: [
+    "7.2" >:: (fun ctxt ->
+      assert_equal ~printer
+          (`O ([("foo", `Null); ("null", `String ("bar"))]))
+        (of_string_exn {|{
+  foo : null,
+  null : bar
+}|})
+      )
+  ; "7.4" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("implicit block key",
+              `A ([`O ([("implicit flow key", `String ("value"))])]))]
+          ))
+        (of_string_exn {|"implicit block key" : [
+  "implicit flow key" : value
+ ]|})
+      )
+  ; "7.5" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("folded to a space,\nto a line feed, or \t \tnon-content"))
+        (of_string_exn {|Y"folded 
+to a space,	
+ 
+to a line feed, or 	\
+ \ 	non-content"|})
+      )
+  ; "7.6" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String (" 1st non-empty\n2nd non-empty 3rd non-empty "))
+        (of_string_exn {|Y" 1st non-empty
+
+ 2nd non-empty 
+	3rd non-empty "|})
+      )
+  ; "7.7" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("here's to \"quotes\""))
+        (of_string_exn {| Y'here''s to "quotes"'|})
+      )
+  ; "7.8" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("implicit block key",
+              `A ([`O ([("implicit flow key", `String ("value"))])]))]
+          ))
+        (of_string_exn {|Y'implicit block key' : [
+  Y'implicit flow key' : value
+ ]|})
+      )
+  ; "7.9" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String (" 1st non-empty\n2nd non-empty 3rd non-empty "))
+        (of_string_exn {|
+Y' 1st non-empty
+
+ 2nd non-empty 
+	3rd non-empty '|})
+      )
+  ; "7.10" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A (
+            [`String ("::vector"); `String (": - ()"); `String ("Up, up, and away!");
+             `Float (-123.); `String ("http://example.com/foo#bar");
+             `A (
+               [`String ("::vector"); `String (": - ()");
+                `String ("Up, up and away!"); `Float (-123.);
+                `String ("http://example.com/foo#bar")]
+             )
+            ]
+          ))
+        (of_string_exn {|# Outside flow collection:
+- "::vector"
+- ": - ()"
+- "Up, up, and away!"
+- -123
+- "http://example.com/foo#bar"
+# Inside flow collection:
+- [ "::vector",
+  ": - ()",
+  "Up, up and away!",
+  -123,
+  "http://example.com/foo#bar" ]
+|})
+      )
+  ; "7.11" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("implicit block key",
+              `A ([`O ([("implicit flow key", `String ("value"))])]))]
+          ))
+        (of_string_exn {|
+implicit block key : [
+  implicit flow key : value,
+ ]|})
+      )
+  ; "7.12" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("1st non-empty\n2nd non-empty 3rd non-empty"))
+        (of_string_exn {|1st non-empty
+
+ 2nd non-empty 
+	3rd non-empty|})
+      )
+  ; "7.13" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A (
+            [`A ([`String ("one"); `String ("two")]);
+             `A ([`String ("three"); `String ("four")])]
+          ))
+        (of_string_exn {|- [ one, two, ]
+- [three ,four]|})
+      )
+  ; "7.14" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A (
+            [`String ("double quoted"); `String ("single quoted");
+             `String ("plain text"); `A ([`String ("nested")]);
+             `O ([("single", `String ("pair"))])]
+          ))
+        (of_string_exn {|[
+"double
+ quoted", 'single
+           quoted',
+plain
+ text, [ nested ],
+single: pair,
+]|})
+      )
+  ; "7.15" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A (
+            [`O ([("one", `String ("two")); ("three", `String ("four"))]);
+             `O ([("five", `String ("six")); ("seven", `String ("eight"))])]
+          ))
+        (of_string_exn {|
+- { one : two , three: four , }
+- {five: six,seven : eight}|})
+      )
+  ; "7.16" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("explicit", `String ("entry")); ("implicit", `String ("entry"));
+             ("", `Null)]
+          ))
+        (of_string_exn {|{
+? explicit: entry,
+implicit: entry,
+?
+}|})
+      )
+  ; "7.17" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("unquoted", `String ("separate")); ("http://foo.com", `Null);
+             ("omitted value", `Null); ("null", `String ("omitted key"))]
+          ))
+        (of_string_exn {|{
+unquoted : "separate",
+"http://foo.com" : null,
+omitted value: null,
+null: omitted key
+}|})
+      )
+  ; "7.18" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("adjacent", `String ("value")); ("readable", `String ("value"));
+             ("empty", `Null)]
+          ))
+        (of_string_exn {|{
+"adjacent":value,
+"readable": value,
+"empty": null
+}|})
+      )
+  ; "7.19" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A ([`O ([("foo", `String ("bar"))])]))
+        (of_string_exn {|[
+foo: bar
+]|})
+      )
+  ; "7.20" >:: (fun ctxt ->
+      assert_equal ~printer
+        ( `A ([`O ([("foo bar", `String ("baz"))])]))
+        (of_string_exn {|[
+foo
+ bar : baz
+]|})
+      )
+  ; "7.23" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`A (
+            [`A ([`String ("a"); `String ("b")]); `O ([("a", `String ("b"))]);
+             `String ("a"); `String ("b"); `String ("c")]
+          ))
+        (of_string_exn {|- [ a, b ]
+- { a: b }
+- "a"
+- Y'b'
+- c|})
+      )
+  ]
 
 let tests = "all" >::: [
     lexing
@@ -1115,6 +1320,7 @@ let tests = "all" >::: [
   ; preview
   ; characters
   ; basic_structures
+  ; flow_styles
 ]
 
 if not !Sys.interactive then

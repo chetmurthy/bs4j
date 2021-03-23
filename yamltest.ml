@@ -1103,12 +1103,12 @@ omitted value:,
   ; "7.18" >:: (fun ctxt ->
       assert_equal ~printer
         (`O (
-            [("adjacent", `String ("value")); ("readable", `String ("\194\183value"));
+            [("adjacent", `String ("value")); ("readable", `String ("value"));
              ("empty", `Null)]
           ))
         (of_string_exn {|{
 "adjacent":value,
-"readable":·value,
+"readable": value,
 "empty":
 }|})
       )
