@@ -86,7 +86,7 @@ value (docs_eoi : Grammar.Entry.e (list value_)) = Grammar.Entry.create g "docs_
 value string_of_scalar = fun [
   `String s -> s
 | `Float f -> string_of_float f
-| `Null -> ""
+| `Null -> "null"
 | `Bool True -> "true"
 | `Bool False -> "false"
 | _ -> assert False
@@ -147,6 +147,9 @@ EXTEND
       | ">" ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
         `String (unquote_rawstring ~{fold=True} indent s)
+      | "|" ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
+        let indent = Ploc.first_pos l - Ploc.bol_pos l in
+        `String (unquote_rawstring ~{fold=False} indent s)
       | l = LIST1 [ s = YAMLSTRING -> s ] -> `String (String.concat " " l)
       | s = STRING -> `String (unquote_string s)
       | s=YAMLSQSTRING -> `String (unquote_yaml_sqstring s)

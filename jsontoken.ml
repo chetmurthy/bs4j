@@ -113,7 +113,9 @@ let hexadecimal_integer = [%sedlex.regexp?  (Opt '-') , "0x" , Plus(hexdigit)]
 let octal_integer = [%sedlex.regexp?  (Opt '-') , "0o" , Plus(octdigit)]
 
 let letter = [%sedlex.regexp? 'a'..'z'|'A'..'Z']
-let ident = [%sedlex.regexp? letter, Star (letter|digit)]
+
+let alphanum = [%sedlex.regexp? (letter|digit)]
+let ident = [%sedlex.regexp? letter, Star alphanum]
 
 let json_unescaped = [%sedlex.regexp? 0x20 .. 0x21 | 0x23 .. 0x5B | 0x5D .. 0x10FFFF ]
 let json_escaped = [%sedlex.regexp? "\\" , ( 0x22 | 0x5C | 0x2F | 0x62 | 0x66 | 0x6E | 0x72 | 0x74 | (0x75, Rep(hexdigit,4)) ) ]
@@ -445,12 +447,12 @@ let indentspaces buf =
   | Star ' ' -> String.length (Sedlexing.Latin1.lexeme buf)
   | _ -> failwith "indentspaces: should never happen"
 
-let rec rawstring2 (spos, id, acc) st =
+let rec rawstring2 ((spos : Lexing.position), (id : Uchar.t array), (acc : Buffer.t)) st =
   let open St in
   let pos() = Sedlexing.lexing_positions st.lexbuf in
   let buf = st.lexbuf in
   match%sedlex buf with
-  | Star(Compl(')')) ->
+  | Plus(Compl(')')) ->
     let txt = Sedlexing.Latin1.lexeme buf in
     Buffer.add_string acc txt ;
     rawstring2 (spos, id, acc) st
@@ -463,20 +465,24 @@ and rawstring3 (spos, id, acc) ofs st =
   let open St in
   let pos() = Sedlexing.lexing_positions st.lexbuf in
   let buf = st.lexbuf in
-  match%sedlex buf with
-  | any ->
-    let c = Sedlexing.lexeme_char buf 0 in
-    Buffer.add_utf_8_uchar acc c ;
-    if ofs = Array.length id && c = Uchar.of_char '"' then begin
+  if ofs < Array.length id then
+    match%sedlex buf with
+    | alphanum ->
+      let c = Sedlexing.lexeme_char buf 0 in
+      Buffer.add_utf_8_uchar acc c ;
+      if c = id.(ofs) then
+        rawstring3 (spos, id, acc) (ofs+1) st
+      else
+        rawstring2 (spos, id, acc) st
+    | _ -> rawstring2 (spos, id, acc) st
+  else
+    match%sedlex buf with
+    | '"' ->
+      Buffer.add_char acc '"' ;
       let (_, epos) = pos() in
       (RAWSTRING (Buffer.contents acc), (spos, epos))
-    end
-    else if c = id.(ofs) then begin
-      rawstring3 (spos, id, acc) (ofs+1) st
-    end
-    else
-      rawstring2 (spos, id, acc) st
-  | _ -> failwith "rawstring3: unexpected character"
+    | _ -> rawstring2 (spos, id, acc) st
+
 
 let rawstring1 (spos, id,acc) st =
   let open St in
@@ -556,6 +562,7 @@ let rec jsontoken st =
       | (LBRACE, _) as t -> St.push_flow st ; t
       | (COLON, _) as t -> t
       | (GT, _) as t -> t
+      | (BAR, _) as t -> t
       | (NEWLINE, _) -> St.set_bol st true ; jsontoken st
       | t -> handle_indents_with st t
   end

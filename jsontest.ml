@@ -159,6 +159,14 @@ R"a(foo)a"
   R"(foo)"
 |})
       )
+  ; "rawstring-2" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(INDENT (0, 2)); RAWSTRING {|R"((foo))"|};
+           (DEDENT (0, 2)); EOF]
+          (tokens_of_string {|
+  R"((foo))"
+|})
+      )
   ; "strings-2" >:: (fun ctxt ->
         assert_equal ~printer
           [(YAMLSTRING "a"); COLON;
@@ -667,21 +675,15 @@ fixed: 1230.15
 negative infinity: -.inf
 not a number: .NaN|})
       )
-  ]
-
-let preview2 = "preview2" >::: [
-    "mt" >:: (fun ctxt ->
-        ()
-      )
   ; "2.21" >:: (fun ctxt ->
       assert_equal ~printer
         (`O (
             [("null", `Null); ("booleans", `A ([`Bool (true); `Bool (false)]));
              ("string", `String ("012345"))]
           ))
-        (of_string_exn {|null:
+        (of_string_exn {|null: null
 booleans: [ true, false ]
-string: '012345'|})
+string: Y'012345'|})
       )
   ; "2.22" >:: (fun ctxt ->
       assert_equal ~printer
@@ -691,10 +693,10 @@ string: '012345'|})
              ("spaced", `String ("2001-12-14 21:59:43.10 -5"));
              ("date", `String ("2002-12-14"))]
           ))
-        (of_string_exn {|canonical: 2001-12-15T02:59:43.1Z
-iso8601: 2001-12-14t21:59:43.10-05:00
-spaced: 2001-12-14 21:59:43.10 -5
-date: 2002-12-14|})
+        (of_string_exn {|canonical: "2001-12-15T02:59:43.1Z"
+iso8601: "2001-12-14t21:59:43.10-05:00"
+spaced: "2001-12-14 21:59:43.10 -5"
+date: "2002-12-14"|})
       )
   ; "2.23" >:: (fun ctxt ->
       assert_equal ~printer
@@ -711,48 +713,21 @@ date: 2002-12-14|})
             ]
           ))
         (of_string_exn {|---
-not-date: !!str 2002-04-28
+"not-date": "2002-04-28"
 
-picture: !!binary |
- R0lGODlhDAAMAIQAAP//9/X
- 17unp5WZmZgAAAOfn515eXv
- Pz7Y6OjuDg4J+fn5OTk6enp
- 56enmleECcgggoBADs=
+picture: |
+ R"(R0lGODlhDAAMAIQAAP//9/X
+    17unp5WZmZgAAAOfn515eXv
+    Pz7Y6OjuDg4J+fn5OTk6enp
+    56enmleECcgggoBADs=
+    )"
 
-application specific tag: !something |
- The semantics of the tag
- above may be different for
- different documents.
+application specific tag: |
+ R"(The semantics of the tag
+    above may be different for
+    different documents.
+    )"
 |})
-      )
-  ; "2.24" >:: (fun ctxt ->
-      assert_raises_exn_pattern
-        "Anchors are not supported when serialising to JSON"
-        (fun () -> of_string_exn {|%TAG ! tag:clarkevans.com,2002:
---- !shape
-  # Use the ! handle for presenting
-  # tag:clarkevans.com,2002:circle
-- !circle
-  center: &ORIGIN {x: 73, y: 129}
-  radius: 7
-- !line
-  start: *ORIGIN
-  finish: { x: 89, y: 102 }
-- !label
-  start: *ORIGIN
-  color: 0xFFEEBB
-  text: Pretty vector drawing.|})
-      )
-  ; "2.25" >:: (fun ctxt ->
-      assert_equal ~printer
-        (`O ([("Mark McGwire", `Null); ("Sammy Sosa", `Null); ("Ken Griff", `Null)]))
-        (of_string_exn {|# Sets are represented as a
-# Mapping where each key is
-# associated with a null value
---- !!set
-? Mark McGwire
-? Sammy Sosa
-? Ken Griff|})
       )
   ; "2.26" >:: (fun ctxt ->
       assert_equal ~printer
@@ -763,28 +738,62 @@ application specific tag: !something |
         (of_string_exn {|# Ordered maps are represented as
 # A sequence of mappings, with
 # each mapping having one key
---- !!omap
+---
 - Mark McGwire: 65
 - Sammy Sosa: 63
 - Ken Griffy: 58|})
       )
   ; "2.27" >:: (fun ctxt ->
-      assert_raises_exn_pattern
-        "Anchors are not supported when serialising to JSON"
-        (fun () -> of_string_exn {|--- !<tag:clarkevans.com,2002:invoice>
+      assert_equal ~printer
+        (`O (
+            [("invoice", `Float (34843.)); ("date", `String ("2001-01-23"));
+             ("bill-to",
+              `O (
+                [("given", `String ("Chris")); ("family", `String ("Dumars"));
+                 ("address",
+                  `O (
+                    [("lines", `String ("458 Walkman Dr.\nSuite #292"));
+                     ("city", `String ("Royal Oak")); ("state", `String ("MI"));
+                     ("postal", `Float (48046.))]
+                  ))
+                ]
+              ));
+             ("ship-to", `String ("bill-to"));
+             ("product",
+              `A (
+                [`O (
+                    [("sku", `String ("BL394D")); ("quantity", `Float (4.));
+                     ("description", `String ("Basketball")); ("price", `Float (450.))
+                    ]
+                  );
+                 `O (
+                   [("sku", `String ("BL4438H")); ("quantity", `Float (1.));
+                    ("description", `String ("Super Hoop"));
+                    ("price", `Float (2392.))]
+                 )
+                ]
+              ));
+             ("tax", `Float (251.42)); ("total", `Float (4443.52));
+             ("comments",
+              `String (
+                "Late afternoon is best.\nBackup contact is Nancy\nBillsmer @ 338-4338."
+              ))
+            ]
+          ))
+        (of_string_exn {|---
 invoice: 34843
-date   : 2001-01-23
-bill-to: &id001
+date   : "2001-01-23"
+"bill-to":
     given  : Chris
     family : Dumars
     address:
         lines: |
-            458 Walkman Dr.
-            Suite #292
+         R"(458 Walkman Dr.
+            Suite #292)"
         city    : Royal Oak
         state   : MI
         postal  : 48046
-ship-to: *id001
+"ship-to": "bill-to"
 product:
     - sku         : BL394D
       quantity    : 4
@@ -797,43 +806,64 @@ product:
 tax  : 251.42
 total: 4443.52
 comments:
-    Late afternoon is best.
+ R"(Late afternoon is best.
     Backup contact is Nancy
-    Billsmer @ 338-4338.|})
+    Billsmer @ 338-4338.)"|})
       )
   ; "2.28" >:: (fun ctxt ->
-      warning "example 2.28 has multiple docs: this isn't implemented right" ;
-      assert_equal ~printer
-        (`O (
+      assert_equal ~printer:docs_printer
+        [`O (
             [("Time", `String ("2001-11-23 15:01:42 -5")); ("User", `String ("ed"));
              ("Warning", `String ("This is an error message for the log file"))]
-          ))
-        (of_string_exn {|---
-Time: 2001-11-23 15:01:42 -5
+          );
+         `O (
+           [("Time", `String ("2001-11-23 15:02:31 -5")); ("User", `String ("ed"));
+            ("Warning", `String ("A slightly different error message."))]
+         );
+         `O (
+           [("Date", `String ("2001-11-23 15:03:17 -5")); ("User", `String ("ed"));
+            ("Fatal", `String ("Unknown variable \"bar\""));
+            ("Stack",
+             `A (
+               [`O (
+                   [("file", `String ("TopClass.py")); ("line", `Float (23.));
+                    ("code", `String ("x = MoreObject(\"345\\n\""))]
+                 );
+                `O (
+                  [("file", `String ("MoreClass.py")); ("line", `Float (58.));
+                   ("code", `String ("foo = bar"))]
+                )
+               ]
+             ))
+           ]
+         )
+        ]
+        (docs_of_string_exn {|---
+Time: "2001-11-23 15:01:42 -5"
 User: ed
 Warning:
   This is an error message
   for the log file
 ---
-Time: 2001-11-23 15:02:31 -5
+Time: "2001-11-23 15:02:31 -5"
 User: ed
 Warning:
   A slightly different error
   message.
 ---
-Date: 2001-11-23 15:03:17 -5
+Date: "2001-11-23 15:03:17 -5"
 User: ed
 Fatal:
-  Unknown variable "bar"
+  R"(Unknown variable "bar")"
 Stack:
   - file: TopClass.py
     line: 23
     code: |
-      x = MoreObject("345\n")
+      R"(x = MoreObject("345\n"))"
   - file: MoreClass.py
     line: 58
-    code: |-
-      foo = bar
+    code: |
+      R"(foo = bar)"
 |})
       )
   ]
