@@ -31,7 +31,9 @@ value compatible_lexer lb =
     ("RAWSTRING",s)
   | INDENT _ _ -> ("INDENT","")
   | DEDENT _ _ -> ("DEDENT","")
-  | NUMBER s -> ("NUMBER",s)
+  | DECIMAL s -> ("DECIMAL",s)
+  | HEXADECIMAL s -> ("HEXADECIMAL",s)
+  | OCTAL s -> ("OCTAL",s)
   | STRING s -> ("STRING", s)
   | EOF -> ("EOI","")
 
@@ -149,7 +151,9 @@ EXTEND
       | s = STRING -> `String (unquote_string s)
       | s=YAMLSQSTRING -> `String (unquote_yaml_sqstring s)
       | s=YAMLDQSTRING -> `String (unquote_yaml_dqstring s)
-      | n = NUMBER -> `Float (float_of_string n)
+      | n = DECIMAL -> `Float (float_of_string n)
+      | n = HEXADECIMAL -> `Float (float_of_int (int_of_string n))
+      | n = OCTAL -> `Float (float_of_int (int_of_string n))
       | "null" -> `Null
       | "true" -> `Bool True
       | "false" -> `Bool False

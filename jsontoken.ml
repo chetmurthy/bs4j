@@ -100,15 +100,18 @@ let gen_of_string s =
 
 let linews = [%sedlex.regexp? ' ' | '\t' | '\r']
 
+let octdigit = [%sedlex.regexp? '0'..'7']
 let digit = [%sedlex.regexp? '0'..'9']
+let hexdigit = [%sedlex.regexp? '0'..'9' | 'a'..'f' | 'A'..'F']
 let int = [%sedlex.regexp? '0' | ( ('1'..'9') , (Star digit) )]
 let frac = [%sedlex.regexp? '.' , (Plus digit)]
 let exp = [%sedlex.regexp? ('e' | 'E') , (Opt ('-' | '+')) , (Plus digit)]
-let number = [%sedlex.regexp?  (Opt '-') , int , (Opt frac) , (Opt exp)]
+let decimal_float = [%sedlex.regexp?  (Opt '-') , int , (Opt frac) , (Opt exp)]
+let hexadecimal_integer = [%sedlex.regexp?  (Opt '-') , "0x" , Plus(hexdigit)]
+let octal_integer = [%sedlex.regexp?  (Opt '-') , "0o" , Plus(octdigit)]
 
 let letter = [%sedlex.regexp? 'a'..'z'|'A'..'Z']
 let ident = [%sedlex.regexp? letter, Star (letter|digit)]
-let hexdigit = [%sedlex.regexp? '0'..'9' | 'a'..'f' | 'A'..'F']
 
 let json_unescaped = [%sedlex.regexp? 0x20 .. 0x21 | 0x23 .. 0x5B | 0x5D .. 0x10FFFF ]
 let json_escaped = [%sedlex.regexp? "\\" , ( 0x22 | 0x5C | 0x2F | 0x62 | 0x66 | 0x6E | 0x72 | 0x74 | (0x75, Rep(hexdigit,4)) ) ]
@@ -358,7 +361,9 @@ type token =
   | BAR
   | GT
   | PLUS
-  | NUMBER of string
+  | DECIMAL of string
+  | HEXADECIMAL of string
+  | OCTAL of string
   | STRING of string
   | RAWSTRING of string
   | YAMLSTRING of string
@@ -500,7 +505,9 @@ let rec rawtoken st =
   let pos() = Sedlexing.lexing_positions st.lexbuf in
   let buf = st.lexbuf in
   match%sedlex buf with
-  | number -> (NUMBER (Sedlexing.Latin1.lexeme buf),pos())
+  | decimal_float -> (DECIMAL (Sedlexing.Latin1.lexeme buf),pos())
+  | hexadecimal_integer -> (HEXADECIMAL (Sedlexing.Latin1.lexeme buf),pos())
+  | octal_integer -> (OCTAL (Sedlexing.Latin1.lexeme buf),pos())
   | json_string -> (STRING (Sedlexing.Latin1.lexeme buf),pos())
   | yaml_sqstring -> (YAMLSQSTRING (Sedlexing.Latin1.lexeme buf),pos())
   | yaml_dqstring -> (YAMLDQSTRING (Sedlexing.Latin1.lexeme buf),pos())

@@ -32,7 +32,9 @@ type token = Jsontoken.token =
   | BAR
   | GT
   | PLUS
-  | NUMBER of string
+  | DECIMAL of string
+  | HEXADECIMAL of string
+  | OCTAL of string
   | STRING of string
   | RAWSTRING of string
   | YAMLSTRING of string
@@ -93,7 +95,7 @@ a:
   ; "flow-3" >:: (fun ctxt ->
         assert_equal ~printer
           [LBRACE; (YAMLSTRING "hr");
-           COLON; (NUMBER "63"); RBRACE;
+           COLON; (DECIMAL "63"); RBRACE;
            EOF]
           (tokens_of_string {|
 { hr: 63
@@ -195,7 +197,7 @@ a
   ; "float-1" >:: (fun ctxt ->
         assert_equal ~printer
           [(YAMLSTRING "hr"); COLON;
-           (INDENT (0, 5)); (NUMBER "65");
+           (INDENT (0, 5)); (DECIMAL "65");
            (DEDENT (0, 5)); EOF]
           (tokens_of_string {|
 hr:  65    # Home runs
@@ -638,23 +640,23 @@ quoted: Y"So does this
   quoted scalar.\n"
 |})
       )
+  ; "2.19" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("canonical", `Float (12345.)); ("decimal", `Float (12345.));
+             ("octal", `Float 12.); ("hexadecimal", `Float (12.))]
+          ))
+        (of_string_exn {|canonical: 12345
+decimal: 12345
+octal: 0o14
+hexadecimal: 0xC
+|})
+      )
   ]
 
 let preview2 = "preview2" >::: [
     "mt" >:: (fun ctxt ->
         ()
-      )
-  ; "2.19" >:: (fun ctxt ->
-      assert_equal ~printer
-        (`O (
-            [("canonical", `Float (12345.)); ("decimal", `Float (12345.));
-             ("octal", `String ("0o14")); ("hexadecimal", `Float (12.))]
-          ))
-        (of_string_exn {|canonical: 12345
-decimal: +12345
-octal: 0o14
-hexadecimal: 0xC
-|})
       )
   ; "2.20" >:: (fun ctxt ->
       assert_equal ~printer
