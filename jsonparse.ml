@@ -145,17 +145,22 @@ EXTEND
         let indent = Ploc.first_pos loc - Ploc.bol_pos loc in
         `String (unquote_rawstring ~{fold=False} indent s)
 
-      | ">"; s = RAWSTRING ->
-        let indent = Ploc.first_pos loc - Ploc.bol_pos loc in
+      | ">" ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
+        let indent = Ploc.first_pos l - Ploc.bol_pos l in
         `String (unquote_rawstring ~{fold=True} indent s)
 
       | ">" ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
         `String (unquote_rawstring ~{fold=True} indent s)
 
+      | "|" ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
+        let indent = Ploc.first_pos l - Ploc.bol_pos l in
+        `String (unquote_rawstring ~{fold=False} indent s)
+
       | "|" ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
         `String (unquote_rawstring ~{fold=False} indent s)
+
       | l = LIST1 [ s = YAMLSTRING -> s ] -> `String (String.concat " " l)
       | s = STRING -> `String (unquote_string s)
       | s=YAMLSQSTRING -> `String (unquote_yaml_sqstring s)

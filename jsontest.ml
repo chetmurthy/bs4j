@@ -6,7 +6,7 @@ open Jsontoken
 let warning s = Fmt.(pf stderr "%s\n%!" s)
 
 let matches ~pattern text =
-  match Str.search_forward (Str.regexp pattern) text 0 with
+  match Str.search_forward (Str.regexp (Str.quote pattern)) text 0 with
     _ -> true
   | exception Not_found -> false
 
@@ -14,6 +14,8 @@ let assert_raises_exn_pattern pattern f =
   Testutil.assert_raises_exn_pred
     (function
         Failure msg when matches ~pattern msg -> true
+      | Ploc.Exc(_, Stdlib.Stream.Error msg) when matches ~pattern msg -> true
+      | Stdlib.Stream.Error msg when matches ~pattern msg -> true
       | Ploc.Exc(_, Failure msg) when matches ~pattern msg -> true
       | Invalid_argument msg when matches ~pattern msg -> true
       | _ -> false
@@ -44,8 +46,8 @@ type token = Jsontoken.token =
   | INDENT of int * int
   | DEDENT of int * int
   | NEWLINE (* internal token *)
-  | EOF  [@@deriving show,eq]
-type toks = token list [@@deriving show,eq]
+  | EOF  [@@deriving show { with_path = false},eq]
+type toks = token list [@@deriving show { with_path = false},eq]
 
 let printer = show_toks
 
@@ -61,16 +63,19 @@ let lexing = "lexing" >::: [
       )
   ; "2" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSTRING "a"); COLON;
-           (INDENT (0, 2)); (YAMLSTRING "null");
-           (DEDENT (0, 2)); EOF]
+          [(YAMLSTRING "a"); COLON; (INDENT (0, 1));
+           (INDENT (1, 2)); (YAMLSTRING "null");
+           (DEDENT (1, 2)); (DEDENT (0, 1)); EOF]
           (tokens_of_string "\na:\n  null")
       )
   ; "3" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSTRING "a"); COLON; (INDENT (0, 3)); (YAMLSTRING "b"); (DEDENT (0, 3));
-           (YAMLSTRING "c"); COLON; (INDENT (0, 3)); (YAMLSTRING "d"); (DEDENT (0, 3));
-           EOF]
+          [(YAMLSTRING "a"); COLON; (INDENT (0, 1));
+           (INDENT (1, 3)); (YAMLSTRING "b");
+           (DEDENT (1, 3)); (DEDENT (0, 1));
+           (YAMLSTRING "c"); COLON; (INDENT (0, 1));
+           (INDENT (1, 3)); (YAMLSTRING "d");
+           (DEDENT (1, 3)); (DEDENT (0, 1)); EOF]
           (tokens_of_string {|
 a: b
 c: d
@@ -85,9 +90,10 @@ c: d
       )
   ; "flow-2" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSTRING "a"); COLON; LBRACKET;
-           (STRING "\"a\""); COMMA; (STRING "\"b\"");
-           RBRACKET; EOF]
+          [(YAMLSTRING "a"); COLON; (INDENT (0, 1));
+           LBRACKET; (STRING "\"a\""); COMMA;
+           (STRING "\"b\""); RBRACKET; (DEDENT (0, 1));
+           EOF]
           (tokens_of_string {|
 a:
  ["a", "b"]
@@ -104,25 +110,21 @@ a:
 |})
       )
   ; "indents" >:: (fun ctxt ->
-        assert_equal ~printer
-          [YAMLSTRING "a"; COLON; INDENT (0, 1);
-           YAMLSTRING "b"; COLON; INDENT (1, 4);
-           YAMLSTRING "c"; DEDENT (1, 4);
-           DEDENT (0, 1);
-           EOF]
-          (tokens_of_string {|
+      assert_equal ~printer
+        [(YAMLSTRING "a"); COLON; (INDENT (0, 1)); (YAMLSTRING "b"); COLON;
+         (INDENT (1, 2)); (INDENT (2, 4)); (YAMLSTRING "c"); (DEDENT (2, 4));
+         (DEDENT (1, 2)); (DEDENT (0, 1)); EOF]
+        (tokens_of_string {|
 a:
  b: c
 |})
-      )
+    )
   ; "indents-2" >:: (fun ctxt ->
         assert_equal ~printer
-          [YAMLSTRING "a"; COLON; INDENT (0, 1);
-           YAMLSTRING "b"; COLON; INDENT (1, 4);
-           YAMLSTRING "c"; DEDENT (1, 4);
-           YAMLSTRING "d"; COLON; INDENT (1, 4);
-           YAMLSTRING "e"; DEDENT (1, 4);
-           DEDENT (0, 1);
+          [(YAMLSTRING "a"); COLON; (INDENT (0, 1)); (YAMLSTRING "b"); COLON;
+           (INDENT (1, 2)); (INDENT (2, 4)); (YAMLSTRING "c"); (DEDENT (2, 4));
+           (DEDENT (1, 2)); (YAMLSTRING "d"); COLON; (INDENT (1, 2)); (INDENT (2, 4));
+           (YAMLSTRING "e"); (DEDENT (2, 4)); (DEDENT (1, 2)); (DEDENT (0, 1)); 
            EOF]
           (tokens_of_string {|
 a:
@@ -132,11 +134,9 @@ a:
       )
   ; "indents-3" >:: (fun ctxt ->
         assert_equal ~printer
-          [YAMLSTRING "a"; COLON; INDENT (0, 1);
-           DASH; INDENT (1, 3); YAMLSTRING "b";
-           DEDENT (1, 3); DASH; INDENT (1, 3);
-           YAMLSTRING "d"; DEDENT (1, 3);
-           DEDENT (0, 1);
+          [(YAMLSTRING "a"); COLON; (INDENT (0, 1)); DASH; (INDENT (1, 2));
+           (INDENT (2, 3)); (YAMLSTRING "b"); (DEDENT (2, 3)); (DEDENT (1, 2)); 
+           DASH; (INDENT (1, 3)); (YAMLSTRING "d"); (DEDENT (1, 3)); (DEDENT (0, 1));
            EOF]
           (tokens_of_string {|
 a:
@@ -170,10 +170,8 @@ R"a(foo)a"
       )
   ; "strings-2" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSTRING "a"); COLON;
-           (INDENT (0, 2)); (YAMLSTRING "b");
-           (YAMLSTRING "c"); (DEDENT (0, 2));
-           EOF]
+          [(YAMLSTRING "a"); COLON; (INDENT (0, 1)); (INDENT (1, 2)); (YAMLSTRING "b");
+           (YAMLSTRING "c"); (DEDENT (1, 2)); (DEDENT (0, 1)); EOF]
           (tokens_of_string {|
 a:
   b
@@ -205,9 +203,8 @@ a
       )
   ; "float-1" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSTRING "hr"); COLON;
-           (INDENT (0, 5)); (DECIMAL "65");
-           (DEDENT (0, 5)); EOF]
+          [(YAMLSTRING "hr"); COLON; (INDENT (0, 1)); (INDENT (1, 5)); (DECIMAL "65");
+           (DEDENT (1, 5)); (DEDENT (0, 1)); EOF]
           (tokens_of_string {|
 hr:  65    # Home runs
 |})
@@ -225,53 +222,49 @@ hr:  65    # Home runs
       )
   ; "yamlstring-1" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSTRING "a"); COLON; (INDENT (0, 3));
-           (YAMLSTRING "b c"); (DEDENT (0, 3)); EOF]
+          [(YAMLSTRING "a"); COLON; (INDENT (0, 1)); (INDENT (1, 3));
+           (YAMLSTRING "b c"); (DEDENT (1, 3)); (DEDENT (0, 1)); EOF]
           (tokens_of_string {|a: b c|})
       )
   ; "dqstring-1" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSTRING "unicode"); COLON;
-           (INDENT (0, 9));
-           (YAMLDQSTRING "Y\"Sosa did fine.\\u263A\"");
-           (DEDENT (0, 9)); EOF]
+          [(YAMLSTRING "unicode"); COLON; (INDENT (0, 1)); (INDENT (1, 9));
+           (YAMLDQSTRING "Y\"Sosa did fine.\\u263A\""); (DEDENT (1, 9));
+           (DEDENT (0, 1)); EOF]
           (tokens_of_string {|unicode: Y"Sosa did fine.\u263A"|})
       )
   ; "dqstring-2" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSTRING "control"); COLON;
-  (INDENT (0, 9));
-  (YAMLDQSTRING "Y\"\\b1998\\t1999\\t2000\\n\"");
-  (DEDENT (0, 9)); EOF]
+          [(YAMLSTRING "control"); COLON; (INDENT (0, 1)); (INDENT (1, 9));
+           (YAMLDQSTRING "Y\"\\b1998\\t1999\\t2000\\n\""); (DEDENT (1, 9));
+           (DEDENT (0, 1)); EOF]
           (tokens_of_string {|control: Y"\b1998\t1999\t2000\n"|})
       )
   ; "dqstring-3" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSTRING "hex esc"); COLON;
-  (INDENT (0, 9));
-  (YAMLDQSTRING "Y\"\\x0d\\x0a is \\r\\n\"");
-  (DEDENT (0, 9)); EOF]
+          [(YAMLSTRING "hex esc"); COLON; (INDENT (0, 1)); (INDENT (1, 9));
+           (YAMLDQSTRING "Y\"\\x0d\\x0a is \\r\\n\""); (DEDENT (1, 9));
+           (DEDENT (0, 1)); EOF]
           (tokens_of_string {|hex esc: Y"\x0d\x0a is \r\n"|})
       )
   ; "sqstring-1" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSTRING "single"); COLON; (INDENT (0, 8));
-  (YAMLSQSTRING "Y'\"Howdy!\" he cried.'");
-  (DEDENT (0, 8)); EOF]
+          [(YAMLSTRING "single"); COLON; (INDENT (0, 1)); (INDENT (1, 8));
+           (YAMLSQSTRING "Y'\"Howdy!\" he cried.'"); (DEDENT (1, 8)); (DEDENT (0, 1));
+           EOF]
           (tokens_of_string {|single: Y'"Howdy!" he cried.'|})
       )
   ; "sqstring-2" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSTRING "quoted"); COLON; (INDENT (0, 8));
-  (YAMLSQSTRING "Y' # Not a ''comment''.'");
-  (DEDENT (0, 8)); EOF]
+          [(YAMLSTRING "quoted"); COLON; (INDENT (0, 1)); (INDENT (1, 8));
+           (YAMLSQSTRING "Y' # Not a ''comment''.'"); (DEDENT (1, 8));
+           (DEDENT (0, 1)); EOF]
           (tokens_of_string {|quoted: Y' # Not a ''comment''.'|})
       )
   ; "sqstring-3" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSQSTRING "Y'tie-fighter'"); COLON;
-  (INDENT (0, 16)); (YAMLSQSTRING "Y'|\\-*-/|'");
-  (DEDENT (0, 16)); EOF]
+          [(YAMLSQSTRING "Y'tie-fighter'"); COLON; (INDENT (0, 1)); (INDENT (1, 16));
+           (YAMLSQSTRING "Y'|\\-*-/|'"); (DEDENT (1, 16)); (DEDENT (0, 1)); EOF]
           (tokens_of_string {|Y'tie-fighter': Y'|\-*-/|'|})
       )
   ]
@@ -1374,7 +1367,6 @@ keep:
 |})
       )
   ; "8.5" >:: (fun ctxt ->
-      warning "example 8.5 not handled correctly by ocaml-yaml (trailing \\n)" ;
       assert_equal ~printer
         (`O (
             [("strip", `String ("# text")); ("clip", `String ("# text\n"));
@@ -1583,6 +1575,14 @@ R"(
   - two : three
 |})
       )
+  ; "8.15-busted" >:: (fun ctxt ->
+      assert_raises_exn_pattern
+        "'-' or [scalar] or [json] expected after INDENT (in [json])"
+        (fun () -> of_string_exn {|
+- # Empty
+- a
+|})
+      )
   ; "8.15" >:: (fun ctxt ->
       assert_equal ~printer
         (`A (
@@ -1590,7 +1590,7 @@ R"(
              `O ([("one", `String ("two"))])]
           ))
         (of_string_exn {|
-- # Empty
+- null # Empty
 - 
  R"(block node
     )"
@@ -1612,10 +1612,10 @@ R"(
              ("block key\n", `A ([`String ("one"); `String ("two")]))]
           ))
         (of_string_exn {|
-? explicit key # Empty value
-? |
-  block key
-: - one # Explicit compact
+explicit key: null # Empty value
+R"(block key
+   )":
+  - one # Explicit compact
   - two # block value
 |})
       )
@@ -1628,7 +1628,8 @@ R"(
         (of_string_exn {|-
   "flow in block"
 - >
- Block scalar
+ R"(Block scalar
+    )"
 - # Block collection
   foo : bar
 |})
@@ -1636,11 +1637,10 @@ R"(
   ; "8.21" >:: (fun ctxt ->
       assert_equal ~printer
         (`O ([("literal", `String ("value\n")); ("folded", `String ("value"))]))
-        (of_string_exn {|literal: |2
-  value
+        (of_string_exn {|literal: 
+  R"(value
+     )"
 folded:
-   !foo
-  >1
  value|})
       )
   ; "8.22" >:: (fun ctxt ->
@@ -1649,11 +1649,11 @@ folded:
             [("sequence", `A ([`String ("entry"); `A ([`String ("nested")])]));
              ("mapping", `O ([("foo", `String ("bar"))]))]
           ))
-        (of_string_exn {|sequence: !!seq
-- entry
-- !!seq
- - nested
-mapping: !!map
+        (of_string_exn {|sequence: 
+ - entry
+ -
+  - nested
+mapping:
  foo: bar|})
       )
   ]

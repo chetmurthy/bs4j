@@ -8,6 +8,7 @@
 #require "camlp5.pa_o";;
 #require "yojson" ;;
 #require "sedlex" ;;
+#require "pa_ppx.testutils" ;;
 
 let lexbuf_contents lb =
   let open Lexing in
@@ -27,11 +28,16 @@ print_string "================ START ================\n";; flush stdout ;;
 
 #load "jsontoken.cmo";;
 #load "jsonparse.cmo";;
+#load "jsontest.cmo";;
 open Jsontoken ;;
 open Jsonparse ;;
+open Jsontest ;;
 
 #trace St.pop_styles ;;
+#trace St.handle_indents_with ;;
+#trace St.increment_indent_with ;;
 #trace jsontoken ;;
+(*
 #trace indentspaces ;;
 #trace rawtoken ;;
 #trace unquote_rawstring ;;
@@ -39,7 +45,7 @@ open Jsonparse ;;
 #trace fold_groups;;
 #trace fold_lines;;
 #trace consume_indent;;
-
+*)
 (*
 #trace Sedlexing.new_line ;;
 #trace Jsontoken.jsontoken ;;

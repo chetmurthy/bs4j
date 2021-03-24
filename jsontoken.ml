@@ -453,16 +453,18 @@ type t =
 
   let push_flow st = st.style_stack <- FLOW::st.style_stack
 
-let rec pop_styles loc rev_pushback = function
-    ((BLOCK m)::(BLOCK m')::sst, n) when n < m -> pop_styles loc ((DEDENT(m',m),loc)::rev_pushback) ((BLOCK m')::sst, n)
-  | ((BLOCK m)::sst, n) when n < m -> pop_styles loc ((DEDENT(n,m),loc)::rev_pushback) (sst, n)
+let rec pop_styles0 loc rev_pushback = function
+    ((BLOCK m)::(BLOCK m')::sst, n) when n < m -> pop_styles0 loc ((DEDENT(m',m),loc)::rev_pushback) ((BLOCK m')::sst, n)
+  | ((BLOCK m)::sst, n) when n < m -> pop_styles0 loc ((DEDENT(n,m),loc)::rev_pushback) (sst, n)
 
-  | ((BLOCK m)::sst, n) when n = m && m > 0 -> (rev_pushback, (BLOCK m)::sst)
+  | ((BLOCK m)::sst, n) when n = m && m > -1 -> (rev_pushback, (BLOCK m)::sst)
 
-  | ((BLOCK m)::sst, n) when n = m && m = 0 ->
+  | ((BLOCK m)::sst, n) when n = m && m = -1 ->
     assert (sst = []) ;
     (rev_pushback, [BLOCK 0])
   | _ -> failwith "pop_styles: dedent did not move back to previous indent position"
+
+let pop_styles a b c = pop_styles0 a b c
 
 let handle_indents_with st ((tok,(spos,epos as loc)) as t) =
   assert (st.pushback = []) ;
@@ -470,12 +472,25 @@ let handle_indents_with st ((tok,(spos,epos as loc)) as t) =
     (BLOCK m)::_ ->
     let n = extract_indent_position t in
     if n = m then begin
-      t
+      if tok = DASH then begin
+        st.style_stack <- (BLOCK (n+1))::st.style_stack ;
+        st.pushback <- [(INDENT(n,n+1),(spos,epos))];
+        t
+      end
+      else
+        t
     end
     else if n > m then begin
-      st.style_stack <- (BLOCK n)::st.style_stack ;
-      st.pushback <- [t] ;
-      (INDENT(m,n),(spos,spos))
+      if tok = DASH then begin
+        st.style_stack <- (BLOCK (n+1))::(BLOCK n)::st.style_stack ;
+        st.pushback <- [t; (INDENT(n,n+1),(spos,epos))];
+        (INDENT(m,n),(spos,epos))
+      end
+      else begin
+        st.style_stack <- (BLOCK n)::st.style_stack ;
+        st.pushback <- [t] ;
+        (INDENT(m,n),(spos,epos))
+      end
     end
     else (* n < m *) begin
       let (rev_pushback, new_sst) = pop_styles loc [] (st.style_stack, n) in
@@ -484,6 +499,16 @@ let handle_indents_with st ((tok,(spos,epos as loc)) as t) =
       st.style_stack <- new_sst ;
       List.hd new_pushback
     end
+
+let increment_indent_with st ((tok,(spos,epos as loc)) as t) =
+  assert (st.pushback = []) ;
+  match st.style_stack with
+    (BLOCK m)::_ ->
+    st.style_stack <- (BLOCK (m+1))::st.style_stack ;
+    st.pushback <- [(INDENT(m,m+1), (spos, epos))] ;
+    t
+  | _ -> failwith "increment_indent_with: should never be called in flow style"
+
 end
 
 let indentspaces buf =
@@ -586,7 +611,7 @@ let rec rawtoken st =
   | _ -> failwith "Unexpected character"
 
 
-let rec jsontoken st =
+let rec jsontoken0 st =
   let open St in
   match st with
     { pushback = h::t ; _ } ->
@@ -596,7 +621,7 @@ let rec jsontoken st =
   | { pushback = [] ; at_bol = true ; style_stack = (BLOCK _) :: _ ; _ } ->
     ignore(indentspaces st.lexbuf) ;
     St.set_bol st false ;
-    jsontoken st
+    jsontoken0 st
 
   | { pushback = [] ; at_bol = false ; style_stack = (BLOCK m) :: sst ; _ } -> begin
       match rawtoken st with
@@ -604,10 +629,10 @@ let rec jsontoken st =
       | (LBRACKET, _) as t -> St.push_flow st ; t
       | (RBRACE, _) -> failwith "jsontoken: '}' found in block style"
       | (LBRACE, _) as t -> St.push_flow st ; t
-      | (COLON, _) as t -> t
+      | (COLON, _) as t -> increment_indent_with st t
       | (GT, _) as t -> t
       | (BAR, _) as t -> t
-      | (NEWLINE, _) -> St.set_bol st true ; jsontoken st
+      | (NEWLINE, _) -> St.set_bol st true ; jsontoken0 st
       | t -> handle_indents_with st t
   end
 
@@ -617,9 +642,11 @@ let rec jsontoken st =
       | (LBRACKET, _) as t -> St.push_flow st ; t
       | (RBRACE, _) as t -> St. pop_flow st ; t
       | (LBRACE, _) as t -> St.push_flow st ; t
-      | (NEWLINE, _) -> St.set_bol st true ; jsontoken st
+      | (NEWLINE, _) -> St.set_bol st true ; jsontoken0 st
       | t -> t
     end
+
+let jsontoken st = jsontoken0 st
 
 let lex_string s =
   let st = St.mk (Sedlexing.Latin1.from_gen (gen_of_string s)) in
