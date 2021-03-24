@@ -1,7 +1,7 @@
 
 OCAMLFIND=ocamlfind
 NOT_OCAMLFIND=not-ocamlfind
-PACKAGES=fmt,camlp5.extprint,camlp5.extend,camlp5.pprintf,pcre,yaml,pa_ppx.deriving_plugins.std,pa_ppx.testutils,sedlex
+PACKAGES=bos,fmt,camlp5.extprint,camlp5.extend,camlp5.pprintf,pcre,yaml,pa_ppx.deriving_plugins.std,pa_ppx.testutils,sedlex
 
 OBJ=jsontoken.cmo jsonparse.cmo
 
@@ -19,6 +19,9 @@ test:: all
 #	./yamltest || true
 
 .SUFFIXES: .mll .ml .cmo .cmx
+
+tml.cmo: tml.ml
+	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),sedlex,oUnit -syntax camlp5o -c $<
 
 jsonparse.cmo: jsonparse.ml
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),sedlex,oUnit -syntax camlp5r -c $<

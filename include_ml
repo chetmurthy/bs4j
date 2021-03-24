@@ -29,6 +29,7 @@ print_string "================ START ================\n";; flush stdout ;;
 #load "jsontoken.cmo";;
 #load "jsonparse.cmo";;
 #load "jsontest.cmo";;
+#load "tml.cmo";;
 open Jsontoken ;;
 open Jsonparse ;;
 open Jsontest ;;
