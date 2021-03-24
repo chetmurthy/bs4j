@@ -1725,6 +1725,153 @@ matches %: 20|})
       )
   ]
 
+let recommended_schemas = "Recommended Schemas" >::: [
+    "10.1" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("Block style",
+              `O (
+                [("Clark", `String ("Evans")); ("Ingy", `String ("d\195\182t Net"));
+                 ("Oren", `String ("Ben-Kiki"))]
+              ));
+             ("Flow style",
+              `O (
+                [("Clark", `String ("Evans")); ("Ingy", `String ("d\195\182t Net"));
+                 ("Oren", `String ("Ben-Kiki"))]
+              ))
+            ]
+          ))
+        (of_string_exn {|Block style:
+  Clark : Evans
+  Ingy  : döt Net
+  Oren  : "Ben-Kiki"
+
+Flow style: { Clark: Evans, Ingy: döt Net, Oren: "Ben-Kiki" }|})
+      )
+  ; "10.2" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("Block style",
+              `A (
+                [`String ("Clark Evans"); `String ("Ingy d\195\182t Net");
+                 `String ("Oren Ben-Kiki")]
+              ));
+             ("Flow style",
+              `A (
+                [`String ("Clark Evans"); `String ("Ingy d\195\182t Net");
+                 `String ("Oren Ben-Kiki")]
+              ))
+            ]
+          ))
+        (of_string_exn {|Block style: 
+ - Clark Evans
+ - Ingy döt Net
+ - "Oren Ben-Kiki"
+
+Flow style: [ Clark Evans, Ingy döt Net, "Oren Ben-Kiki" ]|})
+      )
+  ; "10.3" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("Block style", `String ("String: just a theory."));
+             ("Flow style", `String ("String: just a theory."))]
+          ))
+        (of_string_exn {|Block style:
+  "String: just a theory."
+
+Flow style: "String: just a theory."|})
+      )
+  ; "10.4" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("null", `String ("value for null key")); ("key with null value", `Null)]))
+        (of_string_exn {|null: value for null key
+key with null value: null|})
+      )
+  ; "10.5" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("YAML is a superset of JSON", `Bool (true));
+             ("Pluto is a planet", `Bool (false))]
+          ))
+        (of_string_exn {|
+YAML is a superset of JSON: true
+Pluto is a planet: false|})
+      )
+  ; "10.6" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("negative", `Float (-12.)); ("zero", `Float (0.));
+             ("positive", `Float (34.))]
+          ))
+        (of_string_exn {|negative: -12
+zero: 0
+positive: 34|})
+      )
+  ; "10.7" >:: (fun ctxt ->
+      assert_equal ~printer
+        ~cmp
+        (`O (
+            [("negative", `Float (-1.)); ("zero", `Float (0.));
+             ("positive", `Float (23000.)); ("infinity", `Float (infinity));
+             ("not a number", `Float (nan))]
+          ))
+        (of_string_exn {|negative: -1
+zero: 0
+positive: 2.3e4
+infinity: .inf
+not a number: .NaN|})
+      )
+  ; "10.8" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`O (
+            [("A null", `Null); ("Booleans", `A ([`Bool (true); `Bool (false)]));
+             ("Integers", `A ([`Float (0.); `Float (-0.); `Float (3.); `Float (-19.)]));
+             ("Floats",
+              `A ([`Float (0.); `Float (-0.); `Float (12000.); `Float (-200000.)]));
+             ("Invalid",
+              `A ([`String"True"; `String"Null"; `Float (7.); `Float (58.); `Float 12.3]))
+            ]
+          ))
+        (of_string_exn {|
+A null: null
+Booleans: [ true, false ]
+Integers: [ 0, -0, 3, -19 ]
+Floats: [ 0., -0.0, 12e03, -2E+05 ]
+Invalid: [ True, Null, 0o7, 0x3A, 12.3 ]|})
+      )
+  ; "10.9" >:: (fun ctxt ->
+      assert_equal ~printer
+        ~cmp
+        (`O (
+            [("A null", `Null); ("Also a null", `Null); ("Not a null", `String (""));
+             ("Booleans",
+              `A ([`Bool (true); `String"True"; `Bool (false); `String"FALSE"]));
+             ("Integers",
+              `A ([`Float (0.); `Float (7.); `Float (58.); `Float (-19.)]));
+             ("Floats",
+              `A (
+                [`Float (0.); `Float (-0.); `Float (0.5); `Float (12000.);
+                 `Float (-200000.)]
+              ));
+             ("Also floats",
+              `A (
+                [`Float (infinity); `String ("-.Inf"); `Float (nan)
+                ]
+              ))
+            ]
+          ))
+        (of_string_exn {|
+A null: null
+Also a null: null # Empty
+Not a null: ""
+Booleans: [ true, True, false, FALSE ]
+Integers: [ 0, 0o7, 0x3A, -19 ]
+Floats: [ 0., -0.0, .5, 12e03, -2E+05 ]
+Also floats: [ .inf, -.Inf, .NaN ]|})
+      )
+  ]
+
 let tests = "all" >::: [
     lexing
   ; parsing
@@ -1734,6 +1881,7 @@ let tests = "all" >::: [
   ; flow_styles
   ; block_styles
   ; yaml_character_stream
+  ; recommended_schemas
 ]
 
 if not !Sys.interactive then
