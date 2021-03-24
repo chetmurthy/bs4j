@@ -397,6 +397,7 @@ let unquote_rawstring ~fold indent s =
   else String.concat "\n" l
 
 type token =
+  | BS4J of string
   | LBRACKET
   | RBRACKET
   | LBRACE
@@ -435,12 +436,14 @@ module St = struct
 type t =
   {
     lexbuf : Sedlexing.lexbuf
+  ; mutable first_call : bool
   ; mutable style_stack : style_t list
   ; mutable at_bol : bool
   ; mutable pushback : (token * (Lexing.position * Lexing.position)) list
   }
   let mk lexbuf = {
     lexbuf
+  ; first_call = true
   ; style_stack = [BLOCK 0]
   ; at_bol = true
   ; pushback = []
@@ -510,6 +513,11 @@ let increment_indent_with st ((tok,(spos,epos as loc)) as t) =
   | _ -> failwith "increment_indent_with: should never be called in flow style"
 
 end
+
+let versiontag buf =
+  match%sedlex buf with
+    "%BS4J-1.0", Opt '\r', '\n' -> Some (Sedlexing.Latin1.lexeme buf, Sedlexing.lexing_positions buf)
+  | _ -> None
 
 let indentspaces buf =
   match%sedlex buf with
@@ -614,7 +622,13 @@ let rec rawtoken st =
 let rec jsontoken0 st =
   let open St in
   match st with
-    { pushback = h::t ; _ } ->
+    { first_call = true ; _ } -> begin
+      st.first_call <- false ;
+      match versiontag st.lexbuf with
+        None -> jsontoken0 st
+      | Some (s,p) -> (BS4J s,p)
+    end
+  | { pushback = h::t ; _ } ->
     st.pushback <- t ;
     h
 

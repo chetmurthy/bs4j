@@ -9,7 +9,8 @@ value compatible_lexer lb =
   let ((tok, pos) as t) = Jsontoken.jsontoken lb in
   let pos = positions_to_loc pos in
   let tok = match tok with [
-    LBRACKET -> ("","[")
+    BS4J s -> ("BS4J",s)
+  | LBRACKET -> ("","[")
   | RBRACKET -> ("","]")
   | LBRACE -> ("","{")
   | RBRACE -> ("","}")
@@ -99,10 +100,12 @@ EXTEND
   doc: [ [ v=json -> v
          | "---" ; v=json -> v
          | "---" ; v=json ; "..." -> v
+         | v=json ; "..." -> v
     ] ]
   ;
   delim_doc: [ [ "---" ; v=json -> v
-         | "---" ; v=json ; "..." -> v
+               | "---" ; v=json ; "..." -> v
+               | v=json ; "..." -> v
     ] ]
   ;
   docs: [ [ l = LIST1 delim_doc -> l
@@ -178,8 +181,8 @@ EXTEND
   ;
 
   json_eoi : [ [ l = json ; EOI -> l ] ] ;
-  doc_eoi : [ [ l = doc ; EOI -> l ] ] ;
-  docs_eoi : [ [ l = docs ; EOI -> l ] ] ;
+  doc_eoi : [ [ v = OPT BS4J ; l = doc ; EOI -> l ] ] ;
+  docs_eoi : [ [ v = OPT BS4J ; l = docs ; EOI -> l ] ] ;
 END;
 
 value parse_json = Grammar.Entry.parse json ;

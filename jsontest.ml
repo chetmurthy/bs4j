@@ -23,6 +23,7 @@ let assert_raises_exn_pattern pattern f =
     f
 
 type token = Jsontoken.token =
+  | BS4J of string
   | LBRACKET
   | RBRACKET
   | LBRACE
@@ -1657,6 +1658,72 @@ mapping:
  foo: bar|})
       )
   ]
+let yaml_character_stream = "YAML Character Stream" >::: [
+    "9.2" >:: (fun ctxt ->
+      assert_equal ~printer
+        (`String ("Document"))
+        (of_string_exn {|%BS4J-1.0
+---
+Document
+... # Suffix|})
+      )
+  ; "9.3" >:: (fun ctxt ->
+      assert_equal ~printer:docs_printer
+        [`String ("Bare document"); `Null; `String ("%!PS-Adobe-2.0\n")]
+        (docs_of_string_exn {|Bare
+document
+...
+# No document
+null
+...
+|
+R"(%!PS-Adobe-2.0
+   )" # Not the first line
+...|})
+      )
+  ; "9.4" >:: (fun ctxt ->
+      assert_equal ~printer:docs_printer
+        [`O ([("matches %", `Float (20.))]); `Null]
+        (docs_of_string_exn {|---
+{ matches
+% : 20 }
+...
+---
+# Empty
+null
+...|})
+      )
+  ; "9.5" >:: (fun ctxt ->
+      assert_equal ~printer:docs_printer
+        [`String ("%!PS-Adobe-2.0\n"); `String ("%YAML 1.2"); `Null]
+        (docs_of_string_exn {|%BS4J-1.0
+--- |
+R"(%!PS-Adobe-2.0
+   )"
+...
+%YAML 1.2
+...
+---
+# Empty
+null
+...|})
+      )
+  ; "9.6" >:: (fun ctxt ->
+      assert_equal ~printer:docs_printer
+          [`String ("Document"); `Null; `String ("%YAML 1.2");
+           `O ([("matches %", `Float (20.))])]
+        (docs_of_string_exn {|Document
+...
+---
+# Empty
+null
+...
+%YAML 1.2
+...
+---
+matches %: 20|})
+      )
+  ]
 
 let tests = "all" >::: [
     lexing
@@ -1666,6 +1733,7 @@ let tests = "all" >::: [
   ; basic_structures
   ; flow_styles
   ; block_styles
+  ; yaml_character_stream
 ]
 
 if not !Sys.interactive then
