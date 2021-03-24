@@ -50,6 +50,7 @@ open Jsontest ;;
 #trace Sedlexing.new_line ;;
 #trace Jsontoken.jsontoken ;;
 *)
+#untrace_all ;;
 #print_length 1000;;
 #print_depth 1000;;
 (*

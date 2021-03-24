@@ -1119,7 +1119,7 @@ let flow_styles = "flow styles" >::: [
               `A ([`O ([("implicit flow key", `String ("value"))])]))]
           ))
         (of_string_exn {|"implicit block key" : [
-  "implicit flow key" : value
+ { "implicit flow key" : value }
  ]|})
       )
   ; "7.5" >:: (fun ctxt ->
@@ -1151,7 +1151,7 @@ to a line feed, or 	\
               `A ([`O ([("implicit flow key", `String ("value"))])]))]
           ))
         (of_string_exn {|Y'implicit block key' : [
-  Y'implicit flow key' : value
+  { Y'implicit flow key' : value }
  ]|})
       )
   ; "7.9" >:: (fun ctxt ->
@@ -1197,7 +1197,7 @@ Y' 1st non-empty
           ))
         (of_string_exn {|
 implicit block key : [
-  implicit flow key : value
+  { implicit flow key : value }
  ]|})
       )
   ; "7.12" >:: (fun ctxt ->
@@ -1229,9 +1229,9 @@ implicit block key : [
 Y"double
  quoted", Y'single
            quoted',
-plain
- text, [ nested ],
-single: pair
+Y'plain
+ text', [ nested ],
+{ single: pair }
 ]|})
       )
   ; "7.15" >:: (fun ctxt ->
@@ -1273,15 +1273,15 @@ null: omitted key
       assert_equal ~printer
         (`A ([`O ([("foo", `String ("bar"))])]))
         (of_string_exn {|[
-foo: bar
+{ foo: bar }
 ]|})
       )
   ; "7.20" >:: (fun ctxt ->
       assert_equal ~printer
         ( `A ([`O ([("foo bar", `String ("baz"))])]))
         (of_string_exn {|[
-foo
- bar : baz
+{ Y'foo
+ bar' : baz }
 ]|})
       )
   ; "7.23" >:: (fun ctxt ->
@@ -1685,8 +1685,8 @@ R"(%!PS-Adobe-2.0
       assert_equal ~printer:docs_printer
         [`O ([("matches %", `Float (20.))]); `Null]
         (docs_of_string_exn {|---
-{ matches
-% : 20 }
+{ Y'matches
+%' : 20 }
 ...
 ---
 # Empty
@@ -1868,7 +1868,7 @@ Not a null: ""
 Booleans: [ true, True, false, FALSE ]
 Integers: [ 0, 0o7, 0x3A, -19 ]
 Floats: [ 0., -0.0, .5, 12e03, -2E+05 ]
-Also floats: [ .inf, -.Inf, .NaN ]|})
+Also floats: [ .inf, Y'-.Inf', .NaN ]|})
       )
   ]
 
