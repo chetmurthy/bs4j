@@ -8,6 +8,10 @@ jsontest.cmx : \
     jsonparse.cmx
 jsontypes.cmo :
 jsontypes.cmx :
+ocamlyaml_tmltest.cmo : \
+    tml.cmo
+ocamlyaml_tmltest.cmx : \
+    tml.cmx
 yamltest.cmo : \
     jsontypes.cmo
 yamltest.cmx : \

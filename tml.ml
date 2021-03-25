@@ -5,6 +5,7 @@ open Pa_ppx_testutils
 type t =
   {
     name : string
+  ; filename : string
   ; sections : (string * string list) list
   }
 
@@ -16,7 +17,8 @@ let match_extract rex groupl s =
     None
   else Some(List.map (fun n -> Str.matched_group n s) groupl)
 
-let parse_lines l =
+let parse_lines ?filename l =
+  let filename = match filename with None -> "" | Some s -> s in
   let (specl, sectl1, tl) = match l with
       (specl :: sectl1 :: tl) -> (specl, sectl1, tl)
     | _ -> failwith "Tml.mk: need at least two lines"
@@ -35,8 +37,9 @@ let parse_lines l =
       match match_extract sect_line [1] sectl1 with
         None -> failwith "Tml.mk: failed to match first section line"
       | Some [sectname] ->
-        { name = name ;
-          sections = sectrec [] (sectname, [sectl1]) tl }
+        { name = name
+        ; filename = filename
+        ; sections = sectrec [] (sectname, [sectl1]) tl }
       | _ -> assert false
     end
   | _ -> assert false
@@ -59,7 +62,7 @@ let from_channel ic =
 let from_file f =
   let l = f |> Fpath.v |> Bos.OS.File.read_lines
           |> Rresult.R.get_ok in
-  parse_lines l
+  parse_lines ~filename:f l
 
 
 let find_sect t sname =
@@ -68,6 +71,8 @@ let find_sect t sname =
   | exception Not_found -> None
 
 module OCamlYAML = struct
+
+let warning s = Fmt.(pf stderr "%s\n%!" s)
 
 let printer x = Fmt.(str "%a" Jsontypes.pp_yaml x)
 let cmp = Jsontypes.equal_yaml
@@ -86,22 +91,77 @@ let assert_raises_exn_pattern pattern f =
     )
     f
 
+let indented n s =
+  let slen = String.length s in
+  if slen < n then false
+  else
+    let rec irec ofs =
+      if ofs = n then true
+      else if String.get s ofs = ' ' then
+        irec (ofs+1)
+      else false
+    in irec 0
+
+let consume_indent n s =
+  let slen = String.length s in
+  if slen = 0 then ""
+  else if indented n s then
+    String.sub s n (slen - n)
+  else failwith "consume_indent"
+
+let extract_yaml t = function
+    (("in-yaml"|"out-yaml"), l) -> String.concat "\n" (List.tl l)
+  | (("in-yaml(<)"|"out-yaml(<)"), l) -> String.concat "\n" (List.map (consume_indent 4) (List.tl l))
+  | _ -> failwith (Fmt.(str "%s: internal error in extract_yaml" t.filename))
+
+let find_yaml t sectname =
+  match (find_sect t sectname
+         ,find_sect t (sectname^"(<)")
+        ,find_sect t (sectname^"(+)")) with
+    (Some x, None, None) -> Some (sectname, x)
+  | (None, Some x, None) -> Some (sectname^"(<)", x)
+  | (None, None, Some x) -> Some (sectname^"(+)", x)
+  | (None, None, None) -> None
+  | _ ->
+    failwith (Fmt.(str "%s: malformed YAML sections" t.filename))
+
+
 let exec t =
-  match (find_sect t "in-yaml"
+  match (find_yaml t "in-yaml"
         ,find_sect t "in-json"
-        ,find_sect t "out-yaml"
+        ,find_yaml t "out-yaml"
         ,find_sect t "error"
         )
   with
-    (Some yamll, Some jsonl, _, None) ->
-    let yamls = String.concat "\n" (List.tl yamll) in
+    (Some yamlp
+    ,Some jsonl, _, None) ->
+    let yamls = extract_yaml t yamlp in
     let jsons = String.concat "\n" (List.tl jsonl) in
     assert_equal ~printer
       (Jsontypes.json2yaml (Yojson.Basic.from_string jsons))
       (Yaml.of_string_exn yamls)
 
-  | (Some yamll, _, _, Some errorl) ->
-      assert_raises_exn_pattern
-        ""
-        (fun () -> (Yaml.of_string_exn yamls))
+  | (Some inyamlp
+    ,None
+    ,Some outyamlp
+    , None) ->
+    let inyamls = extract_yaml t inyamlp in
+    let outyamls = extract_yaml t outyamlp in
+    assert_equal ~printer
+      (Yaml.of_string_exn outyamls)
+      (Yaml.of_string_exn inyamls)
+
+  | (Some yamlp
+    ,_, _, Some errorl) ->
+    let yamls = extract_yaml t yamlp in
+    assert_raises_exn_pattern
+      ""
+      (fun () -> (Yaml.of_string_exn yamls))
+
+  | (Some _
+    ,None, None, None) ->
+    warning Fmt.(str "%s: test not meant to be executed (I guess)" t.filename)
+
+  | _ -> failwith (Fmt.(str "%s: unhandled TML syntax" t.filename))
+
 end
