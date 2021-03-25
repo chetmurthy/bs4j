@@ -272,10 +272,10 @@ hr:  65    # Home runs
 
 open Jsonparse
 
-let printer = show_value_
-let docs_printer = show_value_list
-let cmp = equal_value_
-let docs_cmp = equal_value_list
+let printer = Jsontypes.show_yaml
+let docs_printer = Jsontypes.show_yaml_list
+let cmp = Jsontypes.equal_yaml
+let docs_cmp = Jsontypes.equal_yaml_list
 
 let of_string_exn = parse_string parse_doc_eoi
 let docs_of_string_exn = parse_string parse_docs_eoi

@@ -1,3 +1,5 @@
+open OUnit2
+open OUnitTest
 
 type t =
   {
@@ -57,3 +59,21 @@ let from_file f =
   let l = f |> Fpath.v |> Bos.OS.File.read_lines
           |> Rresult.R.get_ok in
   parse_lines l
+
+
+let find_sect t sname =
+  match List.assoc sname t.sections with
+    l -> Some l
+  | exception Not_found -> None
+
+module OCamlYAML = struct
+
+let exec t =
+  match (find_sect t "in-yaml"
+        ,find_sect t "in-json"
+        )
+  with
+    (Some yamll, Some jsonl) ->
+    ()
+
+end

@@ -3,14 +3,14 @@ OCAMLFIND=ocamlfind
 NOT_OCAMLFIND=not-ocamlfind
 PACKAGES=bos,fmt,camlp5.extprint,camlp5.extend,camlp5.pprintf,pcre,yaml,pa_ppx.deriving_plugins.std,pa_ppx.testutils,sedlex
 
-OBJ=jsontoken.cmo jsonparse.cmo
+OBJ=jsontypes.cmo tml.cmo jsontoken.cmo jsonparse.cmo
 
 all: $(OBJ) yamltest jsontest
 
-yamltest: yamltest.cmo
+yamltest: $(OBJ) yamltest.cmo
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -linkpkg -linkall -syntax camlp5r $^ -o $@
 
-jsontest: jsontoken.cmo jsonparse.cmo jsontest.cmo
+jsontest: $(OBJ) jsontest.cmo
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -linkpkg -linkall -syntax camlp5r $^ -o $@
 
 test:: all
@@ -20,6 +20,11 @@ test:: all
 
 .SUFFIXES: .mll .ml .cmo .cmx
 
+jsontypes.cmo: jsontypes.ml
+	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -syntax camlp5o -c $<
+
+jsontest.cmo: jsontest.ml
+	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -syntax camlp5o -c $<
 tml.cmo: tml.ml
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),sedlex,oUnit -syntax camlp5o -c $<
 
@@ -44,7 +49,7 @@ clean:
 
 
 depend::
-	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5o yamltest.ml jsontest.ml > .depend.NEW || true
+	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5o jsontypes.ml yamltest.ml jsontest.ml > .depend.NEW || true
 	$(OCAMLFIND) ocamldep $(DEBUG) -package sedlex.ppx jsontoken.ml >> .depend.NEW || true
 	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5r jsonparse.ml >> .depend.NEW
 	mv .depend.NEW .depend

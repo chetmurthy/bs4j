@@ -4,8 +4,12 @@ jsontest.cmo : \
 jsontest.cmx : \
     jsontoken.cmx \
     jsonparse.cmx
-yamltest.cmo :
-yamltest.cmx :
+jsontypes.cmo :
+jsontypes.cmx :
+yamltest.cmo : \
+    jsontypes.cmo
+yamltest.cmx : \
+    jsontypes.cmx
 jsontoken.cmo :
 jsontoken.cmx :
 jsonparse.cmo : \

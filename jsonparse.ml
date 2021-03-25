@@ -1,4 +1,5 @@
 open Jsontoken ;
+open Jsontypes ;
 
 value positions_to_loc ?{comments=""} (spos, epos) =
   let open Lexing in
@@ -65,26 +66,16 @@ value lexer = {Plexing.tok_func = lexer;
  Plexing.tok_text = Plexing.lexer_text;
  Plexing.tok_comm = None} ;
 
-type value_ =
-  [= `A of list value_
-  | `Bool of bool
-  | `Float of (float [@equal fun x y -> 0 = compare x y;])
-  | `Null
-  | `O of list (string * value_)
-  | `String of string ] [@@deriving (show,eq);]
-;
-type value_list = list value_ [@@deriving (show,eq);] ;
-
 value g = Grammar.gcreate lexer;
-value (json : Grammar.Entry.e value_) = Grammar.Entry.create g "json";
-value (flow_json : Grammar.Entry.e value_) = Grammar.Entry.create g "flow_json";
-value (scalar : Grammar.Entry.e value_) = Grammar.Entry.create g "scalar";
-value (flow_scalar : Grammar.Entry.e value_) = Grammar.Entry.create g "flow_scalar";
+value (json : Grammar.Entry.e yaml) = Grammar.Entry.create g "json";
+value (flow_json : Grammar.Entry.e yaml) = Grammar.Entry.create g "flow_json";
+value (scalar : Grammar.Entry.e yaml) = Grammar.Entry.create g "scalar";
+value (flow_scalar : Grammar.Entry.e yaml) = Grammar.Entry.create g "flow_scalar";
 value json_eoi = Grammar.Entry.create g "json_eoi";
-value (doc : Grammar.Entry.e value_) = Grammar.Entry.create g "doc";
-value (doc_eoi : Grammar.Entry.e value_) = Grammar.Entry.create g "doc_eoi";
-value (docs : Grammar.Entry.e (list value_)) = Grammar.Entry.create g "docs";
-value (docs_eoi : Grammar.Entry.e (list value_)) = Grammar.Entry.create g "docs_eoi";
+value (doc : Grammar.Entry.e yaml) = Grammar.Entry.create g "doc";
+value (doc_eoi : Grammar.Entry.e yaml) = Grammar.Entry.create g "doc_eoi";
+value (docs : Grammar.Entry.e (list yaml)) = Grammar.Entry.create g "docs";
+value (docs_eoi : Grammar.Entry.e (list yaml)) = Grammar.Entry.create g "docs_eoi";
 
 value string_of_scalar = fun [
   `String s -> s

@@ -19,17 +19,9 @@ let assert_raises_exn_pattern pattern f =
     )
     f
 
-type value =
-  [ `A of value list
-  | `Bool of bool
-  | `Float of (float [@equal fun x y -> 0 = compare x y])
-  | `Null
-  | `O of (string * value) list
-  | `String of string ] [@@deriving show,eq]
+let printer x = Fmt.(str "%a" Jsontypes.pp_yaml x)
 
-let printer x = Fmt.(str "%a" pp_value x)
-
-let cmp = equal_value
+let cmp = Jsontypes.equal_yaml
 
 let preview = "preview" >::: [
     "2.1" >:: (fun ctxt ->
