@@ -1,5 +1,6 @@
 open OUnit2
 open OUnitTest
+open Pa_ppx_testutils
 
 type t =
   {
@@ -68,12 +69,39 @@ let find_sect t sname =
 
 module OCamlYAML = struct
 
+let printer x = Fmt.(str "%a" Jsontypes.pp_yaml x)
+let cmp = Jsontypes.equal_yaml
+
+let matches ~pattern text =
+  match Str.search_forward (Str.regexp pattern) text 0 with
+    _ -> true
+  | exception Not_found -> false
+
+let assert_raises_exn_pattern pattern f =
+  Testutil.assert_raises_exn_pred
+    (function
+        Failure msg when matches ~pattern msg -> true
+      | Invalid_argument msg when matches ~pattern msg -> true
+      | _ -> false
+    )
+    f
+
 let exec t =
   match (find_sect t "in-yaml"
         ,find_sect t "in-json"
+        ,find_sect t "out-yaml"
+        ,find_sect t "error"
         )
   with
-    (Some yamll, Some jsonl) ->
-    ()
+    (Some yamll, Some jsonl, _, None) ->
+    let yamls = String.concat "\n" (List.tl yamll) in
+    let jsons = String.concat "\n" (List.tl jsonl) in
+    assert_equal ~printer
+      (Jsontypes.json2yaml (Yojson.Basic.from_string jsons))
+      (Yaml.of_string_exn yamls)
 
+  | (Some yamll, _, _, Some errorl) ->
+      assert_raises_exn_pattern
+        ""
+        (fun () -> (Yaml.of_string_exn yamls))
 end
