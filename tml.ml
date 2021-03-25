@@ -109,9 +109,19 @@ let consume_indent n s =
     String.sub s n (slen - n)
   else failwith "consume_indent"
 
+let tab_re = Str.regexp "<TAB>"
+let spc_re = Str.regexp "<SPC>"
+
+let perform_subst s =
+  let s = Str.(global_substitute tab_re (fun _ -> "\t") s) in
+  let s = Str.(global_substitute spc_re (fun _ -> " ") s) in
+  s
+
 let extract_yaml t = function
-    (("in-yaml"|"out-yaml"), l) -> String.concat "\n" (List.tl l)
-  | (("in-yaml(<)"|"out-yaml(<)"), l) -> String.concat "\n" (List.map (consume_indent 4) (List.tl l))
+    (("in-yaml"|"out-yaml"), l) ->
+    perform_subst (String.concat "\n" (List.tl l))
+  | (("in-yaml(<)"|"out-yaml(<)"), l) ->
+    perform_subst (String.concat "\n" (List.map (consume_indent 4) (List.tl l)))
   | _ -> failwith (Fmt.(str "%s: internal error in extract_yaml" t.filename))
 
 let find_yaml t sectname =
@@ -138,8 +148,8 @@ let exec t =
     let yamls = extract_yaml t yamlp in
     let jsons = String.concat "\n" (List.tl jsonl) in
     assert_equal ~printer
-      (Jsontypes.json2yaml (Yojson.Basic.from_string jsons))
-      (Yaml.of_string_exn yamls)
+      (Jsontypes.canon_yaml (Jsontypes.json2yaml (Yojson.Basic.from_string jsons)))
+      (Jsontypes.canon_yaml (Yaml.of_string_exn yamls))
 
   | (Some inyamlp
     ,None

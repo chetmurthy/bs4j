@@ -31,9 +31,11 @@ print_string "================ START ================\n";; flush stdout ;;
 #load "jsontoken.cmo";;
 #load "jsonparse.cmo";;
 #load "jsontest.cmo";;
+#load "ocamlyaml_tmltest.cmo";;
 open Jsontoken ;;
 open Jsonparse ;;
 open Jsontest ;;
+open Ocamlyaml_tmltest ;;
 
 #trace St.pop_styles ;;
 #trace St.handle_indents_with ;;

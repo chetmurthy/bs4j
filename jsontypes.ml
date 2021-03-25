@@ -35,6 +35,16 @@ let yaml2json (y : yaml) : json =
   | `O l -> `Assoc (List.map (fun (k,v) -> (k,yrec v)) l)
   in yrec y
 
+let canon_yaml (y : yaml) : yaml =
+  let rec yrec = function
+    `Null -> `Null
+  | `Bool b -> `Bool b
+  | `Float f -> `Float f
+  | `String s -> `String s
+  | `A l -> `A (List.map yrec l)
+  | `O l -> `O (List.stable_sort Stdlib.compare (List.map (fun (k,v) -> (k,yrec v)) l))
+  in yrec y
+
 let json2yaml (y : json) : yaml =
   let rec yrec = function
     `Null -> `Null
@@ -44,4 +54,15 @@ let json2yaml (y : json) : yaml =
   | `String s -> `String s
   | `List l -> `A (List.map yrec l)
   | `Assoc l -> `O (List.map (fun (k,v) -> (k,yrec v)) l)
+  in yrec y
+
+let canon_json (y : json) : json =
+  let rec yrec = function
+    `Null -> `Null
+  | `Bool b -> `Bool b
+  | `Float f -> `Float f
+  | `Int n -> `Float (float_of_int n)
+  | `String s -> `String s
+  | `List l -> `List (List.map yrec l)
+  | `Assoc l -> `Assoc (List.stable_sort Stdlib.compare (List.map (fun (k,v) -> (k,yrec v)) l))
   in yrec y

@@ -18,7 +18,9 @@ let tml_files dir =
 let make_test fname =
   let open Tml in
   let t = Tml.from_file fname in
-  t.name >:: (fun ctxt ->
+  let base = Fpath.(fname |> v |> basename) in
+  let name = Fmt.(str "%s (%s)" t.name base) in
+  name >:: (fun ctxt ->
       OCamlYAML.exec t
     )
 
