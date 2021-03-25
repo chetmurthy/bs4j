@@ -67,15 +67,15 @@ value lexer = {Plexing.tok_func = lexer;
  Plexing.tok_comm = None} ;
 
 value g = Grammar.gcreate lexer;
-value (json : Grammar.Entry.e yaml) = Grammar.Entry.create g "json";
-value (flow_json : Grammar.Entry.e yaml) = Grammar.Entry.create g "flow_json";
-value (scalar : Grammar.Entry.e yaml) = Grammar.Entry.create g "scalar";
-value (flow_scalar : Grammar.Entry.e yaml) = Grammar.Entry.create g "flow_scalar";
+value (json : Grammar.Entry.e json) = Grammar.Entry.create g "json";
+value (flow_json : Grammar.Entry.e json) = Grammar.Entry.create g "flow_json";
+value (scalar : Grammar.Entry.e json) = Grammar.Entry.create g "scalar";
+value (flow_scalar : Grammar.Entry.e json) = Grammar.Entry.create g "flow_scalar";
 value json_eoi = Grammar.Entry.create g "json_eoi";
-value (doc : Grammar.Entry.e yaml) = Grammar.Entry.create g "doc";
-value (doc_eoi : Grammar.Entry.e yaml) = Grammar.Entry.create g "doc_eoi";
-value (docs : Grammar.Entry.e (list yaml)) = Grammar.Entry.create g "docs";
-value (docs_eoi : Grammar.Entry.e (list yaml)) = Grammar.Entry.create g "docs_eoi";
+value (doc : Grammar.Entry.e json) = Grammar.Entry.create g "doc";
+value (doc_eoi : Grammar.Entry.e json) = Grammar.Entry.create g "doc_eoi";
+value (docs : Grammar.Entry.e (list json)) = Grammar.Entry.create g "docs";
+value (docs_eoi : Grammar.Entry.e (list json)) = Grammar.Entry.create g "docs_eoi";
 
 value string_of_scalar = fun [
   `String s -> s
@@ -108,8 +108,8 @@ EXTEND
   flow_json:
     [ [ s = flow_scalar -> s
 
-      | "[" ; l = LIST0 flow_json SEP "," ; "]" -> `A l
-      | "{" ; l = LIST0 [ s = flow_scalar ; ":" ; v=flow_json -> (string_of_scalar s,v) ] SEP "," ; "}" -> `O l
+      | "[" ; l = LIST0 flow_json SEP "," ; "]" -> `List l
+      | "{" ; l = LIST0 [ s = flow_scalar ; ":" ; v=flow_json -> (string_of_scalar s,v) ] SEP "," ; "}" -> `Assoc l
     ] ]
   ;
 
@@ -118,21 +118,21 @@ EXTEND
 
       | s = scalar ; ":" ; v=json ;
         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
-        -> `O [(string_of_scalar s,v) :: l]
+        -> `Assoc [(string_of_scalar s,v) :: l]
 
       | "-" ; v=json ;
         l = LIST0 [ "-" ; v=json -> v ]
-        -> `A [v :: l]
+        -> `List [v :: l]
 
-      | "[" ; l = LIST0 flow_json SEP "," ; "]" -> `A l
-      | "{" ; l = LIST0 [ s = flow_scalar ; ":" ; v=flow_json -> (string_of_scalar s,v) ] SEP "," ; "}" -> `O l
+      | "[" ; l = LIST0 flow_json SEP "," ; "]" -> `List l
+      | "{" ; l = LIST0 [ s = flow_scalar ; ":" ; v=flow_json -> (string_of_scalar s,v) ] SEP "," ; "}" -> `Assoc l
       | INDENT ; s=scalar ; DEDENT -> s
       | INDENT ; s=scalar ; ":" ; v=json ;
         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ;
-        DEDENT -> `O [(string_of_scalar s,v) :: l]
+        DEDENT -> `Assoc [(string_of_scalar s,v) :: l]
       | INDENT ; "-" ; v=json ;
         l = LIST0 [ "-" ; v=json -> v ] ;
-        DEDENT -> `A [v :: l]
+        DEDENT -> `List [v :: l]
       | INDENT ; v=json ; DEDENT -> v
     ] ]
   ;

@@ -1,7 +1,9 @@
 jsontest.cmo : \
+    jsontypes.cmo \
     jsontoken.cmo \
     jsonparse.cmo
 jsontest.cmx : \
+    jsontypes.cmx \
     jsontoken.cmx \
     jsonparse.cmx
 jsontypes.cmo :
@@ -13,6 +15,8 @@ yamltest.cmx : \
 jsontoken.cmo :
 jsontoken.cmx :
 jsonparse.cmo : \
+    jsontypes.cmo \
     jsontoken.cmo
 jsonparse.cmx : \
+    jsontypes.cmx \
     jsontoken.cmx

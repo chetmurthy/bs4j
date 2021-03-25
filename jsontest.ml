@@ -277,8 +277,8 @@ let docs_printer = Jsontypes.show_yaml_list
 let cmp = Jsontypes.equal_yaml
 let docs_cmp = Jsontypes.equal_yaml_list
 
-let of_string_exn = parse_string parse_doc_eoi
-let docs_of_string_exn = parse_string parse_docs_eoi
+let of_string_exn s = s |> parse_string parse_doc_eoi |> Jsontypes.json2yaml
+let docs_of_string_exn s = s |> parse_string parse_docs_eoi |> List.map Jsontypes.json2yaml
 
 let parsing = "parsing" >::: [
     "simple" >:: (fun ctxt ->
