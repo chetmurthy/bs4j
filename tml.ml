@@ -123,23 +123,45 @@ let perform_subst s =
   let s = Str.(global_substitute spc_re (fun _ -> " ") s) in
   s
 
+let is_comment s = String.length s > 0 && String.get s 0 = '#'
+
+let strip_comments l =
+  List.filter (fun s -> not (is_comment s)) l
+
 let extract_yaml t = function
     (("in-yaml"|"out-yaml"), l) ->
-    perform_subst (String.concat "\n" (List.tl l))
-  | (("in-yaml(<)"|"out-yaml(<)"), l) ->
-    perform_subst (String.concat "\n" (List.map (consume_indent 4) (List.tl l)))
+    l
+    |> List.tl
+    |> String.concat "\n"
+    |> perform_subst
+
+  | (("in-yaml(<)"|"in-yaml(<+)"|"out-yaml(<)"|"out-yaml(<+)"), l) ->
+    l
+    |> List.tl
+    |> strip_comments
+    |> List.map (consume_indent 4)
+    |> String.concat "\n"
+    |> perform_subst
+
   | (("in-yaml(+)"|"out-yaml(+)"), l) ->
-    perform_subst (String.concat "\n" (List.tl l))
+    l
+    |> List.tl
+    |> String.concat "\n"
+    |> perform_subst
+
   | _ -> failwith (Fmt.(str "%s: internal error in extract_yaml" t.filename))
 
 let find_yaml t sectname =
   match (find_sect t sectname
-         ,find_sect t (sectname^"(<)")
-        ,find_sect t (sectname^"(+)")) with
-    (Some x, None, None) -> Some (sectname, x)
-  | (None, Some x, None) -> Some (sectname^"(<)", x)
-  | (None, None, Some x) -> Some (sectname^"(+)", x)
-  | (None, None, None) -> None
+        ,find_sect t (sectname^"(<)")
+        ,find_sect t (sectname^"(+)")
+        ,find_sect t (sectname^"(<+)")
+        ) with
+    (Some x, None, None, None) -> Some (sectname, x)
+  | (None, Some x, None, None) -> Some (sectname^"(<)", x)
+  | (None, None, Some x, None) -> Some (sectname^"(+)", x)
+  | (None, None, None, Some x) -> Some (sectname^"(<+)", x)
+  | (None, None, None, None) -> None
   | _ ->
     failwith (Fmt.(str "%s: malformed YAML sections" t.filename))
 
