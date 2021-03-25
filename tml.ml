@@ -2,6 +2,14 @@ open OUnit2
 open OUnitTest
 open Pa_ppx_testutils
 
+let warning s = Fmt.(pf stderr "%s\n%!" s)
+
+let list_of_stream strm =
+let rec listrec acc = parser
+  [< 't ; strm >] -> listrec (t::acc) strm
+| [< >] -> List.rev acc
+in listrec [] strm
+
 type t =
   {
     name : string
@@ -72,10 +80,8 @@ let find_sect t sname =
 
 module OCamlYAML = struct
 
-let warning s = Fmt.(pf stderr "%s\n%!" s)
-
-let printer x = Fmt.(str "%a" Jsontypes.pp_yaml x)
-let cmp = Jsontypes.equal_yaml
+let printer x = Fmt.(str "%a" Jsontypes.pp_yaml_list x)
+let cmp = Jsontypes.equal_yaml_list
 
 let matches ~pattern text =
   match Str.search_forward (Str.regexp pattern) text 0 with
@@ -122,6 +128,8 @@ let extract_yaml t = function
     perform_subst (String.concat "\n" (List.tl l))
   | (("in-yaml(<)"|"out-yaml(<)"), l) ->
     perform_subst (String.concat "\n" (List.map (consume_indent 4) (List.tl l)))
+  | (("in-yaml(+)"|"out-yaml(+)"), l) ->
+    perform_subst (String.concat "\n" (List.tl l))
   | _ -> failwith (Fmt.(str "%s: internal error in extract_yaml" t.filename))
 
 let find_yaml t sectname =
@@ -136,6 +144,14 @@ let find_yaml t sectname =
     failwith (Fmt.(str "%s: malformed YAML sections" t.filename))
 
 
+let parse_yaml t =
+  match find_yaml t "in-yaml" with
+    Some yamlp ->
+    let yamls = extract_yaml t yamlp in
+      (Jsontypes.canon_yaml (Yaml.of_string_exn yamls))
+
+  | None -> failwith (Fmt.(str "%s: no YAML found" t.filename))
+
 let exec t =
   match (find_yaml t "in-yaml"
         ,find_sect t "in-json"
@@ -148,8 +164,8 @@ let exec t =
     let yamls = extract_yaml t yamlp in
     let jsons = String.concat "\n" (List.tl jsonl) in
     assert_equal ~printer
-      (Jsontypes.canon_yaml (Jsontypes.json2yaml (Yojson.Basic.from_string jsons)))
-      (Jsontypes.canon_yaml (Yaml.of_string_exn yamls))
+      (List.map Jsontypes.canon_yaml (List.map Jsontypes.json2yaml (list_of_stream (Yojson.Basic.stream_from_string jsons))))
+      [(Jsontypes.canon_yaml (Yaml.of_string_exn yamls))]
 
   | (Some inyamlp
     ,None
@@ -158,8 +174,8 @@ let exec t =
     let inyamls = extract_yaml t inyamlp in
     let outyamls = extract_yaml t outyamlp in
     assert_equal ~printer
-      (Yaml.of_string_exn outyamls)
-      (Yaml.of_string_exn inyamls)
+      [(Yaml.of_string_exn outyamls)]
+      [(Yaml.of_string_exn inyamls)]
 
   | (Some yamlp
     ,_, _, Some errorl) ->
