@@ -98,7 +98,7 @@ EXTEND
   ;
   delim_doc: [ [ "---" ; v=json -> v
                | "---" ; v=json ; "..." -> v
-               | v=json ; "..." -> v
+               | v=json ; EOI -> v
     ] ]
   ;
   docs: [ [ l = LIST1 delim_doc -> l

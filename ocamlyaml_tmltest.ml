@@ -117,7 +117,7 @@ let make_test fname =
       )
 
 let parse1 n =
-  Tml.(parse_yaml (from_file Fpath.(to_string (append (v tml_dir) (v n)))))
+  Tml.(OCamlYAML.parse_yaml (from_file Fpath.(to_string (append (v tml_dir) (v n)))))
 
 let tests = "OCamlYaml testsuite" >::: (List.map make_test (Tml.files tml_dir))
 

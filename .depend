@@ -1,3 +1,7 @@
+bs4j_tmltest.cmo : \
+    tml.cmo
+bs4j_tmltest.cmx : \
+    tml.cmx
 jsontest.cmo : \
     jsontypes.cmo \
     jsontoken.cmo \

@@ -179,19 +179,17 @@ let find_yaml t sectname =
   | _ ->
     failwith (Fmt.(str "%s: malformed YAML sections" t.filename))
 
+module OCamlYAML = struct
+
+let printer x = Fmt.(str "%a" Jsontypes.pp_yaml_list x)
+let cmp = Jsontypes.equal_yaml_list
 
 let parse_yaml t =
   match find_yaml t "in-yaml" with
     Some yamlp ->
     let yamls = extract_yaml t yamlp in
       (Jsontypes.canon_yaml (Yaml.of_string_exn yamls))
-
   | None -> failwith (Fmt.(str "%s: no YAML found" t.filename))
-
-module OCamlYAML = struct
-
-let printer x = Fmt.(str "%a" Jsontypes.pp_yaml_list x)
-let cmp = Jsontypes.equal_yaml_list
 
 let exec t =
   match (find_yaml t "in-yaml"
@@ -234,5 +232,58 @@ let exec t =
 end
 
 module BS4J = struct
+
+let printer x = Fmt.(str "%a" Jsontypes.pp_yaml_list x)
+let cmp = Jsontypes.equal_yaml_list
+
+let docs_of_string_exn s =
+  s
+  |> Jsonparse.(parse_string parse_docs_eoi)
+  |> List.map Jsontypes.json2yaml
+
+let parse_yaml t =
+  match find_yaml t "in-yaml" with
+    Some yamlp ->
+    let yamls = extract_yaml t yamlp in
+      (List.map Jsontypes.canon_yaml (docs_of_string_exn yamls))
+  | None -> failwith (Fmt.(str "%s: no YAML found" t.filename))
+
+let exec t =
+  match (find_yaml t "in-yaml"
+        ,find_sect t "in-json"
+        ,find_yaml t "out-yaml"
+        ,find_sect t "error"
+        )
+  with
+    (Some yamlp
+    ,Some jsonl, _, None) ->
+    let yamls = extract_yaml t yamlp in
+    let jsons = String.concat "\n" (List.tl jsonl) in
+    assert_equal ~printer
+      (List.map Jsontypes.canon_yaml (List.map Jsontypes.json2yaml (list_of_stream (Yojson.Basic.stream_from_string jsons))))
+      (List.map Jsontypes.canon_yaml (docs_of_string_exn yamls))
+
+  | (Some inyamlp
+    ,None
+    ,Some outyamlp
+    , None) ->
+    let inyamls = extract_yaml t inyamlp in
+    let outyamls = extract_yaml t outyamlp in
+    assert_equal ~printer
+      [(Yaml.of_string_exn outyamls)]
+      [(Yaml.of_string_exn inyamls)]
+
+  | (Some yamlp
+    ,_, _, Some errorl) ->
+    let yamls = extract_yaml t yamlp in
+    assert_raises_exn_pattern
+      ""
+      (fun () -> (Yaml.of_string_exn yamls))
+
+  | (Some _
+    ,None, None, None) ->
+    warning Fmt.(str "%s: test not meant to be executed (I guess)" t.filename)
+
+  | _ -> failwith (Fmt.(str "%s: unhandled TML syntax" t.filename))
 
 end
