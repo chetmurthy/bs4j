@@ -1669,7 +1669,7 @@ Document
       )
   ; "9.3" >:: (fun ctxt ->
       assert_raises_exn_pattern
-        "EOI expected after [json] (in [delim_doc])"
+        "EOI expected after [json] (in [docs])"
         (fun () -> docs_of_string_exn {|Bare
 document
 ...
@@ -1695,7 +1695,7 @@ null
       )
   ; "9.5" >:: (fun ctxt ->
       assert_raises_exn_pattern
-        "EOI expected after [json] (in [delim_doc])"
+        "EOI expected after [docs] (in [docs_eoi])"
         (fun() -> docs_of_string_exn {|%BS4J-1.0
 --- |
 R"(%!PS-Adobe-2.0
@@ -1710,7 +1710,7 @@ null
       )
   ; "9.6" >:: (fun ctxt ->
       assert_raises_exn_pattern
-        "EOI expected after [json] (in [delim_doc])"
+        "EOI expected after [json] (in [docs])"
         (fun () -> docs_of_string_exn {|Document
 ...
 ---

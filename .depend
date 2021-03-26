@@ -16,6 +16,12 @@ ocamlyaml_tmltest.cmo : \
     tml.cmo
 ocamlyaml_tmltest.cmx : \
     tml.cmx
+tml.cmo : \
+    jsontypes.cmo \
+    jsonparse.cmo
+tml.cmx : \
+    jsontypes.cmx \
+    jsonparse.cmx
 yamltest.cmo : \
     jsontypes.cmo
 yamltest.cmx : \

@@ -63,7 +63,7 @@ clean:
 
 
 depend::
-	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5o jsontypes.ml yamltest.ml jsontest.ml ocamlyaml_tmltest.ml bs4j_tmltest.ml > .depend.NEW || true
+	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5o tml.ml jsontypes.ml yamltest.ml jsontest.ml ocamlyaml_tmltest.ml bs4j_tmltest.ml > .depend.NEW || true
 	$(OCAMLFIND) ocamldep $(DEBUG) -package sedlex.ppx jsontoken.ml >> .depend.NEW || true
 	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5r jsonparse.ml >> .depend.NEW
 	mv .depend.NEW .depend

@@ -6,6 +6,9 @@ let tml_dir = "/home/chet/Hack/Github/yaml/yaml-test-suite/test"
 let skiplist = [
   ("BS4K.tml", None)
 ; ("L94M.tml", Some "``?'' used for key, unsupported syntax")
+; ("RR7F.tml", Some "``?'' used for key, unsupported syntax")
+; ("V55R.tml", Some "anchors are unsupported")
+; ("2AUY.tml", Some "tags are unsupported")
 ]
 
 let make_test fname =
