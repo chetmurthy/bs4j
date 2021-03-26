@@ -524,6 +524,7 @@ let versiontag buf =
 let indentspaces buf =
   match%sedlex buf with
   | Star ' ' -> String.length (Sedlexing.Latin1.lexeme buf)
+  | Star ' ', '\t' -> failwith "indentspaces: a <TAB> found at margin-indent"
   | _ -> failwith "indentspaces: should never happen"
 
 let rec rawstring2 ((spos : Lexing.position), (id : Uchar.t array), (acc : Buffer.t)) st =

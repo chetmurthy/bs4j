@@ -25,6 +25,9 @@ let skiplist = [
 ; ("ZWK4.tml", None)
 ; ("BF9H.tml", None)
 ; ("EB22.tml", None)
+; ("GH63.tml", Some "``?'' used for key, unsupported syntax")
+; ("SU5Z.tml", None)
+; ("U9NS.tml", Some "``:'' is a special char, cannot be used in raw scalars")
 ]
 
 let make_test fname =
