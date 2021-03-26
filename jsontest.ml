@@ -394,6 +394,15 @@ avg: 0.288
           (`O ([("a", `String ("b c"))]))
           (of_string_exn {|a: b c|})
       )
+  ; "dots-1" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`O ([("a", `String ("b c"))]))
+          (of_string_exn {|
+---
+a: b
+... foo
+|})
+      )
   ]
 
 let preview = "preview" >::: [
@@ -1669,7 +1678,7 @@ Document
       )
   ; "9.3" >:: (fun ctxt ->
       assert_raises_exn_pattern
-        "EOI expected after [json] (in [docs])"
+        "EOI expected after [docs] (in [docs_eoi])"
         (fun () -> docs_of_string_exn {|Bare
 document
 ...
@@ -1710,7 +1719,7 @@ null
       )
   ; "9.6" >:: (fun ctxt ->
       assert_raises_exn_pattern
-        "EOI expected after [json] (in [docs])"
+        "EOI expected after [docs] (in [docs_eoi])"
         (fun () -> docs_of_string_exn {|Document
 ...
 ---

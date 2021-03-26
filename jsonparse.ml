@@ -96,11 +96,13 @@ EXTEND
          | v=json ; "..." -> v
     ] ]
   ;
-  delim_doc: [ [ "---" ; v=json ; OPT "..." -> v
+  delim_doc: [ [ "---" ; v=json -> v
+               | "---" ; v=json ; OPT "..." -> v
+
     ] ]
   ;
   docs: [ [ l = LIST1 delim_doc -> l
-          | v=json ; EOI -> [v]
+          | v=json -> [v]
     ] ]
   ;
 

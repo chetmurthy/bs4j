@@ -22,9 +22,11 @@ jsontest: $(OBJ) jsontest.cmo
 test:: all
 	mkdir -p _build
 	./jsontest -runner sequential || true
+#	./yamltest || true
+
+testsuite:: test
 	./ocamlyaml_tmltest || true
 	./bs4j_tmltest || true
-#	./yamltest || true
 
 .SUFFIXES: .mll .ml .cmo .cmx
 
