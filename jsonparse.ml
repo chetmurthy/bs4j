@@ -133,10 +133,20 @@ EXTEND
     ] ]
   ;
 
+(*
+  scalar:
+    [ [ s = scalar_rawstring -> s
+      | s = scalar_yamlstring -> s
+      | s = scalar_other_string -> s
+      | s = scalar_nonstring -> s
+    ] ]
+  ;
+*)
+
   block_members:
     [ [ s = scalar -> s
       | s = scalar ; ":" ; v=json ;
-         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
+         l = LIST0 [ s=string_scalar ; ":" ; v=json -> (s,v) ]
          -> `Assoc [(string_of_scalar s,v) :: l]
 
       | "-" ; v=json ;
@@ -160,41 +170,42 @@ EXTEND
      | s=YAMLSTRING -> s
      | s=YAMLSQSTRING -> unquote_yaml_sqstring s
      | s=YAMLDQSTRING -> unquote_yaml_dqstring s
+     | s = scalar_rawstring -> s
      ] ]
   ;
 
   scalar_rawstring:
     [ [ s = RAWSTRING ->
         let indent = Ploc.first_pos loc - Ploc.bol_pos loc in
-        `String (unquote_rawstring ~{fold=False} indent s)
+        (unquote_rawstring ~{fold=False} indent s)
 
       | ">" ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
-        `String (unquote_rawstring ~{fold=True} indent s)
+        (unquote_rawstring ~{fold=True} indent s)
 
       | ">" ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
-        `String (unquote_rawstring ~{fold=True} indent s)
+        (unquote_rawstring ~{fold=True} indent s)
 
       | "|" ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
-        `String (unquote_rawstring ~{fold=False} indent s)
+        (unquote_rawstring ~{fold=False} indent s)
 
       | "|" ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
-        `String (unquote_rawstring ~{fold=False} indent s)
+        (unquote_rawstring ~{fold=False} indent s)
     ] ]
   ;
 
   scalar_yamlstring:
-    [ [ l = LIST1 [ s = YAMLSTRING -> s ] -> `String (String.concat " " l)
+    [ [ l = LIST1 [ s = YAMLSTRING -> s ] -> (String.concat " " l)
     ] ]
   ;
 
   scalar_other_string:
-    [ [ s = STRING -> `String (unquote_string s)
-      | s=YAMLSQSTRING -> `String (unquote_yaml_sqstring s)
-      | s=YAMLDQSTRING -> `String (unquote_yaml_dqstring s)
+    [ [ s = STRING -> (unquote_string s)
+      | s=YAMLSQSTRING -> (unquote_yaml_sqstring s)
+      | s=YAMLDQSTRING -> (unquote_yaml_dqstring s)
     ] ]
   ;
 
@@ -212,9 +223,9 @@ EXTEND
   ;
 
   scalar:
-    [ [ s = scalar_rawstring -> s
-      | s = scalar_yamlstring -> s
-      | s = scalar_other_string -> s
+    [ [ s = scalar_rawstring -> `String s
+      | s = scalar_yamlstring -> `String s
+      | s = scalar_other_string -> `String s
       | s = scalar_nonstring -> s
     ] ]
   ;
