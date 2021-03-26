@@ -1668,9 +1668,9 @@ Document
 ... # Suffix|})
       )
   ; "9.3" >:: (fun ctxt ->
-      assert_equal ~printer:docs_printer
-        [`String ("Bare document"); `Null; `String ("%!PS-Adobe-2.0\n")]
-        (docs_of_string_exn {|Bare
+      assert_raises_exn_pattern
+        "EOI expected after [json] (in [delim_doc])"
+        (fun () -> docs_of_string_exn {|Bare
 document
 ...
 # No document
@@ -1694,9 +1694,9 @@ null
 ...|})
       )
   ; "9.5" >:: (fun ctxt ->
-      assert_equal ~printer:docs_printer
-        [`String ("%!PS-Adobe-2.0\n"); `String ("%YAML 1.2"); `Null]
-        (docs_of_string_exn {|%BS4J-1.0
+      assert_raises_exn_pattern
+        "EOI expected after [json] (in [delim_doc])"
+        (fun() -> docs_of_string_exn {|%BS4J-1.0
 --- |
 R"(%!PS-Adobe-2.0
    )"
@@ -1709,10 +1709,9 @@ null
 ...|})
       )
   ; "9.6" >:: (fun ctxt ->
-      assert_equal ~printer:docs_printer
-          [`String ("Document"); `Null; `String ("%YAML 1.2");
-           `O ([("matches %", `Float (20.))])]
-        (docs_of_string_exn {|Document
+      assert_raises_exn_pattern
+        "EOI expected after [json] (in [delim_doc])"
+        (fun () -> docs_of_string_exn {|Document
 ...
 ---
 # Empty
