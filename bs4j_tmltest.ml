@@ -34,7 +34,22 @@ let skiplist = [
 ; ("753E.tml", Some "raw-string-literals obviate this")
 ; ("CN3R.tml", None)
 ; ("87E4.tml", Some "flow style should be JSON")
-
+; ("6H3V.tml", Some "yaml quotations")
+; ("Q5MG.tml", Some "<TAB> at margin")
+; ("9DXL.tml", Some "only %BS4J is a valid directive, and only at document-start; multiple docs must all be prefixed with ``---''")
+; ("P2AD.tml", Some "neither indentation nor chomping are necessary")
+; ("BU8L.tml", None)
+; ("LE5A.tml", None)
+; ("Z67P.tml", None)
+; ("2LFX.tml", Some "directives are unsupported")
+; ("PRH3.tml", Some "yaml quotations")
+; ("4GC6.tml", Some "yaml quotations")
+; ("LE5A.tml", None)
+; ("BEC7.tml", Some "change filetype to BS4J; filetype matching is strict")
+; ("F8F9.tml", Some "chomping/stripping is unnecessary")
+; ("26DV.tml", None)
+; ("QF4Y.tml", Some "flow style should be JSON")
+; ("8UDB.tml", Some "yaml quotations, also multiline scalars forbidden in flow style")
 ]
 
 let make_test fname =
