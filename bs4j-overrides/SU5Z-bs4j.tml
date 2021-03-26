@@ -5,7 +5,7 @@
 --- in-yaml
 key: "value"# invalid comment
 
---- in-yaml
+--- in-json
 { "key": "value" }
 
 --- test-event

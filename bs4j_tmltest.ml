@@ -28,6 +28,13 @@ let skiplist = [
 ; ("GH63.tml", Some "``?'' used for key, unsupported syntax")
 ; ("SU5Z.tml", None)
 ; ("U9NS.tml", Some "``:'' is a special char, cannot be used in raw scalars")
+; ("X8DW.tml", Some "``?'' used for key, unsupported syntax")
+; ("MYW6.tml", Some "raw-string-literals obviate this")
+; ("J3BT.tml", None)
+; ("753E.tml", Some "raw-string-literals obviate this")
+; ("CN3R.tml", None)
+; ("87E4.tml", Some "flow style should be JSON")
+
 ]
 
 let make_test fname =

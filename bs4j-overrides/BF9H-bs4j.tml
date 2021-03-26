@@ -9,7 +9,8 @@
            c
 
 
---- error
+--- in-json
+{ "plain": "a b c" }
 
 --- test-event
 +STR
