@@ -405,6 +405,16 @@ a: b
 ... foo
 |})
       )
+  ; "yamlstring-keys-1" >:: (fun ctxt ->
+       assert_raises_exn_pattern
+         "':' expected after [key_scalar] (in [block_members])"
+          (fun () -> of_string_exn {|
+a: c
+b
+d: e
+|})
+      )
+
   ]
 
 let preview = "preview" >::: [

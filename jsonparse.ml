@@ -136,22 +136,22 @@ EXTEND
   block_members:
     [ [ s = scalar_nonstring -> s
       | s = scalar_nonstring ; ":" ; v=json ;
-         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
+         l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
          -> `Assoc [(string_of_scalar s,v) :: l]
 
       | s = scalar_rawstring -> `String s
       | s = scalar_rawstring ; ":" ; v=json ;
-         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
+         l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
          -> `Assoc [(s,v) :: l]
 
       | s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (String.concat " " [s::l])
       | s = YAMLSTRING ; ":" ; v=json ;
-         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
+         l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
          -> `Assoc [(s,v) :: l]
 
       | s = scalar_other_string -> `String s
       | s = scalar_other_string ; ":" ; v=json ;
-         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
+         l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
          -> `Assoc [(s,v) :: l]
 
 
@@ -169,15 +169,6 @@ EXTEND
       | "[" ; l = LIST0 flow_json SEP "," ; "]" -> `List l
       | "{" ; l = LIST0 [ s = flow_scalar ; ":" ; v=flow_json -> (string_of_scalar s,v) ] SEP "," ; "}" -> `Assoc l
     ] ]
-  ;
-
-  string_scalar:
-   [ [ s=STRING -> unquote_string s
-     | s=YAMLSTRING -> s
-     | s=YAMLSQSTRING -> unquote_yaml_sqstring s
-     | s=YAMLDQSTRING -> unquote_yaml_dqstring s
-     | s = scalar_rawstring -> s
-     ] ]
   ;
 
   scalar_rawstring:
@@ -231,6 +222,14 @@ EXTEND
   scalar:
     [ [ s = scalar_rawstring -> `String s
       | s = scalar_yamlstring -> `String s
+      | s = scalar_other_string -> `String s
+      | s = scalar_nonstring -> s
+    ] ]
+  ;
+
+  key_scalar:
+    [ [ s = scalar_rawstring -> `String s
+      | s = YAMLSTRING -> `String s
       | s = scalar_other_string -> `String s
       | s = scalar_nonstring -> s
     ] ]
