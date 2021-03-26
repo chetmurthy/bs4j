@@ -11,6 +11,20 @@ let skiplist = [
 ; ("2AUY.tml", Some "tags are unsupported")
 ; ("5U3A.tml", Some "supported syntax in BS4J")
 ; ("ZCZ6.tml", Some "supported syntax in BS4J")
+; ("6KGN.tml", None)
+; ("ZH7C.tml", None)
+; ("3MYT.tml", None)
+; ("8XYN.tml", None)
+; ("Y2GN.tml", None)
+; ("F2C7.tml", None)
+; ("A2M4.tml", Some "``?'' used for key, unsupported syntax")
+; ("9KBC.tml", Some "supported syntax in BS4J")
+; ("JS2J.tml", None)
+; ("E76Z.tml", None)
+; ("9C9N.tml", None)
+; ("ZWK4.tml", None)
+; ("BF9H.tml", None)
+; ("EB22.tml", None)
 ]
 
 let make_test fname =

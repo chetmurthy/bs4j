@@ -124,7 +124,7 @@ let json_string_char = [%sedlex.regexp? (json_unescaped | json_escaped ) ]
 let json_string = [%sedlex.regexp?  '"' , (Star json_string_char) , '"']
 
 let yamlscalar_char = [%sedlex.regexp? Compl (Chars "-[]{}:,#\\\"\r\n'") ]
-let yamlscalar_startchar = [%sedlex.regexp? Sub (yamlscalar_char, (linews| '.')) ]
+let yamlscalar_startchar = [%sedlex.regexp? Sub (yamlscalar_char, (linews| '.' | '!' | '&' | '*')) ]
 let yamlscalar_endchar = [%sedlex.regexp? Sub (yamlscalar_char, linews) ]
 let yamlscalar = [%sedlex.regexp?  yamlscalar_startchar, Opt (Star yamlscalar_char, yamlscalar_endchar) ]
 
