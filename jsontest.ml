@@ -395,9 +395,9 @@ avg: 0.288
           (of_string_exn {|a: b c|})
       )
   ; "dots-1" >:: (fun ctxt ->
-        assert_equal ~printer
-          (`O ([("a", `String ("b c"))]))
-          (of_string_exn {|
+      assert_raises_exn_pattern
+        "EOI expected after [docs] (in [docs_eoi])"
+          (fun () -> docs_of_string_exn {|
 ---
 a: b
 ... foo
