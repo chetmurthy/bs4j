@@ -1589,7 +1589,7 @@ R"(
       )
   ; "8.15-busted" >:: (fun ctxt ->
       assert_raises_exn_pattern
-        "'-' or [scalar] or [json] expected after INDENT (in [json])"
+        "[json] expected after INDENT (in [json])"
         (fun () -> of_string_exn {|
 - # Empty
 - a

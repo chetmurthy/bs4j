@@ -133,27 +133,25 @@ EXTEND
     ] ]
   ;
 
-  json:
+  block_members:
     [ [ s = scalar -> s
-
       | s = scalar ; ":" ; v=json ;
-        l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
-        -> `Assoc [(string_of_scalar s,v) :: l]
+         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
+         -> `Assoc [(string_of_scalar s,v) :: l]
 
       | "-" ; v=json ;
-        l = LIST0 [ "-" ; v=json -> v ]
-        -> `List [v :: l]
+         l = LIST0 [ "-" ; v=json -> v ]
+         -> `List [v :: l]
+      ] ]
+    ;
+
+  json:
+    [ [ s = block_members -> s
+
+      | INDENT ; v=json ; DEDENT -> v
 
       | "[" ; l = LIST0 flow_json SEP "," ; "]" -> `List l
       | "{" ; l = LIST0 [ s = flow_scalar ; ":" ; v=flow_json -> (string_of_scalar s,v) ] SEP "," ; "}" -> `Assoc l
-      | INDENT ; s=scalar ; DEDENT -> s
-      | INDENT ; s=scalar ; ":" ; v=json ;
-        l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ;
-        DEDENT -> `Assoc [(string_of_scalar s,v) :: l]
-      | INDENT ; "-" ; v=json ;
-        l = LIST0 [ "-" ; v=json -> v ] ;
-        DEDENT -> `List [v :: l]
-      | INDENT ; v=json ; DEDENT -> v
     ] ]
   ;
 
@@ -165,7 +163,7 @@ EXTEND
      ] ]
   ;
 
-  scalar:
+  scalar_rawstring:
     [ [ s = RAWSTRING ->
         let indent = Ploc.first_pos loc - Ploc.bol_pos loc in
         `String (unquote_rawstring ~{fold=False} indent s)
@@ -185,12 +183,23 @@ EXTEND
       | "|" ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
         `String (unquote_rawstring ~{fold=False} indent s)
+    ] ]
+  ;
 
-      | l = LIST1 [ s = YAMLSTRING -> s ] -> `String (String.concat " " l)
-      | s = STRING -> `String (unquote_string s)
+  scalar_yamlstring:
+    [ [ l = LIST1 [ s = YAMLSTRING -> s ] -> `String (String.concat " " l)
+    ] ]
+  ;
+
+  scalar_other_string:
+    [ [ s = STRING -> `String (unquote_string s)
       | s=YAMLSQSTRING -> `String (unquote_yaml_sqstring s)
       | s=YAMLDQSTRING -> `String (unquote_yaml_dqstring s)
-      | n = DECIMAL -> `Float (if n = ".NaN" then nan
+    ] ]
+  ;
+
+  scalar_nonstring:
+    [ [ n = DECIMAL -> `Float (if n = ".NaN" then nan
                                else if n = ".inf" then infinity
                                else if n = "-.inf" then neg_infinity
                                else float_of_string n)
@@ -199,6 +208,14 @@ EXTEND
       | "null" -> `Null
       | "true" -> `Bool True
       | "false" -> `Bool False
+    ] ]
+  ;
+
+  scalar:
+    [ [ s = scalar_rawstring -> s
+      | s = scalar_yamlstring -> s
+      | s = scalar_other_string -> s
+      | s = scalar_nonstring -> s
     ] ]
   ;
 
