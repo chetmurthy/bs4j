@@ -3,6 +3,8 @@ open OUnitTest
 open Pa_ppx_testutils
 open Jsontoken
 
+Pa_ppx_base.Pp_MLast.Ploc.pp_loc_verbose := true ;;
+
 let warning s = Fmt.(pf stderr "%s\n%!" s)
 
 let matches ~pattern text =
@@ -53,7 +55,7 @@ type toks = token list [@@deriving show { with_path = false},eq]
 let printer = show_toks
 
 let tokens_of_string s =
-  List.map fst (lex_string s)
+  List.map fst (ocamllex_string s)
 
 let lexing = "lexing" >::: [
     "simple" >:: (fun ctxt ->

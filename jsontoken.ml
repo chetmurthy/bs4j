@@ -665,7 +665,7 @@ let rec jsontoken0 st =
 
 let jsontoken st = jsontoken0 st
 
-let lex_string s =
+let ocamllex_string s =
   let st = St.mk (Sedlexing.Latin1.from_gen (gen_of_string s)) in
   let rec lexrec acc =
     match jsontoken st with

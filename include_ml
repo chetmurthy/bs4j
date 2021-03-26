@@ -9,6 +9,8 @@
 #require "yojson" ;;
 #require "sedlex" ;;
 #require "pa_ppx.testutils" ;;
+#require "pa_ppx.base" ;;
+#require "pa_ppx.runtime" ;;
 
 let lexbuf_contents lb =
   let open Lexing in

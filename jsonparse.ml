@@ -1,5 +1,15 @@
 open Jsontoken ;
 open Jsontypes ;
+open Pa_ppx_base.Pp_MLast ;
+open Pa_ppx_runtime.Exceptions ;
+
+type t += [
+    Exc of Ploc.t and t[@rebind_to Ploc.Exc;][@name "Ploc.Exc";]
+] [@@deriving show;]
+;
+
+value print_exn exn = Some (show exn) ;
+Printexc.register_printer print_exn ;
 
 value positions_to_loc ?{comments=""} (spos, epos) =
   let open Lexing in
@@ -41,6 +51,15 @@ value compatible_lexer lb =
 
   ] in
   (tok, pos)
+;
+
+value lex_string s =
+  let st = St.mk (Sedlexing.Latin1.from_gen (gen_of_string s)) in
+  let rec lexrec acc =
+    match compatible_lexer st with [
+      (("EOI",_),_) as t -> List.rev [t::acc]
+    | t -> lexrec [t::acc]
+    ] in lexrec []
 ;
 
 (* camlp5r *)

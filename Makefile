@@ -1,7 +1,7 @@
 
 OCAMLFIND=ocamlfind
 NOT_OCAMLFIND=not-ocamlfind
-PACKAGES=bos,fmt,camlp5.extprint,camlp5.extend,camlp5.pprintf,pcre,yaml,pa_ppx.deriving_plugins.std,pa_ppx.testutils,sedlex
+PACKAGES=bos,fmt,camlp5.extprint,camlp5.extend,camlp5.pprintf,pcre,yaml,pa_ppx.deriving_plugins.std,pa_ppx.base.link,pa_ppx.runtime,pa_ppx.testutils,sedlex
 
 OBJ=jsontypes.cmo jsontoken.cmo jsonparse.cmo tml.cmo
 
