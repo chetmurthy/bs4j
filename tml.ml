@@ -97,11 +97,6 @@ let find_sect t sname =
     l -> Some l
   | exception Not_found -> None
 
-module OCamlYAML = struct
-
-let printer x = Fmt.(str "%a" Jsontypes.pp_yaml_list x)
-let cmp = Jsontypes.equal_yaml_list
-
 let matches ~pattern text =
   match Str.search_forward (Str.regexp pattern) text 0 with
     _ -> true
@@ -193,6 +188,11 @@ let parse_yaml t =
 
   | None -> failwith (Fmt.(str "%s: no YAML found" t.filename))
 
+module OCamlYAML = struct
+
+let printer x = Fmt.(str "%a" Jsontypes.pp_yaml_list x)
+let cmp = Jsontypes.equal_yaml_list
+
 let exec t =
   match (find_yaml t "in-yaml"
         ,find_sect t "in-json"
@@ -230,5 +230,9 @@ let exec t =
     warning Fmt.(str "%s: test not meant to be executed (I guess)" t.filename)
 
   | _ -> failwith (Fmt.(str "%s: unhandled TML syntax" t.filename))
+
+end
+
+module BS4J = struct
 
 end
