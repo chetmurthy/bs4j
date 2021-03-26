@@ -144,8 +144,8 @@ EXTEND
          l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
          -> `Assoc [(s,v) :: l]
 
-      | s = scalar_yamlstring -> `String s
-      | s = scalar_yamlstring ; ":" ; v=json ;
+      | s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (String.concat " " [s::l])
+      | s = YAMLSTRING ; ":" ; v=json ;
          l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
          -> `Assoc [(s,v) :: l]
 
