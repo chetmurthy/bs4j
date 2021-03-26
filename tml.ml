@@ -10,6 +10,25 @@ let rec listrec acc = parser
 | [< >] -> List.rev acc
 in listrec [] strm
 
+let tml_re = Str.regexp ".*\\.tml$"
+
+let is_tml f =
+  Str.string_match tml_re f 0
+
+let files ?override_dir dir =
+  let l =  dir
+           |> Fpath.v
+           |> Bos.OS.Dir.contents ~rel:false
+           |> Rresult.R.get_ok
+           |> List.map Fpath.to_string in
+  let overrides =  match override_dir with None -> [] | Some d ->
+    d
+    |> Fpath.v
+    |> Bos.OS.Dir.contents ~rel:false
+    |> Rresult.R.get_ok
+    |> List.map Fpath.to_string in
+  List.filter is_tml (l@overrides)
+
 type t =
   {
     name : string
