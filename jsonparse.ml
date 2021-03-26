@@ -133,21 +133,27 @@ EXTEND
     ] ]
   ;
 
-(*
-  scalar:
-    [ [ s = scalar_rawstring -> s
-      | s = scalar_yamlstring -> s
-      | s = scalar_other_string -> s
-      | s = scalar_nonstring -> s
-    ] ]
-  ;
-*)
-
   block_members:
-    [ [ s = scalar -> s
-      | s = scalar ; ":" ; v=json ;
-         l = LIST0 [ s=string_scalar ; ":" ; v=json -> (s,v) ]
+    [ [ s = scalar_nonstring -> s
+      | s = scalar_nonstring ; ":" ; v=json ;
+         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
          -> `Assoc [(string_of_scalar s,v) :: l]
+
+      | s = scalar_rawstring -> `String s
+      | s = scalar_rawstring ; ":" ; v=json ;
+         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
+         -> `Assoc [(s,v) :: l]
+
+      | s = scalar_yamlstring -> `String s
+      | s = scalar_yamlstring ; ":" ; v=json ;
+         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
+         -> `Assoc [(s,v) :: l]
+
+      | s = scalar_other_string -> `String s
+      | s = scalar_other_string ; ":" ; v=json ;
+         l = LIST0 [ s=scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
+         -> `Assoc [(s,v) :: l]
+
 
       | "-" ; v=json ;
          l = LIST0 [ "-" ; v=json -> v ]
