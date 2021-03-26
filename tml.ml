@@ -106,6 +106,9 @@ let assert_raises_exn_pattern pattern f =
   Testutil.assert_raises_exn_pred
     (function
         Failure msg when matches ~pattern msg -> true
+      | Ploc.Exc(_, Stdlib.Stream.Error msg) when matches ~pattern msg -> true
+      | Stdlib.Stream.Error msg when matches ~pattern msg -> true
+      | Ploc.Exc(_, Failure msg) when matches ~pattern msg -> true
       | Invalid_argument msg when matches ~pattern msg -> true
       | _ -> false
     )
@@ -271,14 +274,14 @@ let exec t =
     let outyamls = extract_yaml t outyamlp in
     assert_equal ~printer
       [(Yaml.of_string_exn outyamls)]
-      [(Yaml.of_string_exn inyamls)]
+      (List.map Jsontypes.canon_yaml (docs_of_string_exn inyamls))
 
   | (Some yamlp
     ,_, _, Some errorl) ->
     let yamls = extract_yaml t yamlp in
     assert_raises_exn_pattern
       ""
-      (fun () -> (Yaml.of_string_exn yamls))
+      (fun () -> List.map Jsontypes.canon_yaml (docs_of_string_exn yamls))
 
   | (Some _
     ,None, None, None) ->
