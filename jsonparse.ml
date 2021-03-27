@@ -159,7 +159,7 @@ EXTEND
          let s = unquote_rawstring ~{fold=False} ~{chomp=False} l s in
          `Assoc [(s,v) :: rest]
 
-      | s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (String.concat " " [s::l])
+      | s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (foldchomp_yamlstrings ~{fold=True} ~{chomp=True} [s::l])
       | s = YAMLSTRING ; ":" ; v=json ;
          l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
          -> `Assoc [(s,v) :: l]
@@ -214,11 +214,6 @@ EXTEND
     ] ]
   ;
 
-  scalar_yamlstring:
-    [ [ l = LIST1 [ s = YAMLSTRING -> s ] -> (String.concat " " l)
-    ] ]
-  ;
-
   scalar_other_string:
     [ [ s = JSONSTRING -> (unquote_jsonstring s)
       | s=YAMLSQSTRING -> (unquote_yaml_sqstring s)
@@ -236,14 +231,6 @@ EXTEND
       | "null" -> `Null
       | "true" -> `Bool True
       | "false" -> `Bool False
-    ] ]
-  ;
-
-  scalar:
-    [ [ (fold, chomp) = fold_chomp ; (s, l) = scalar_rawstring0 -> `String (unquote_rawstring ~{fold} ~{chomp} l s)
-      | s = scalar_yamlstring -> `String s
-      | s = scalar_other_string -> `String s
-      | s = scalar_nonstring -> s
     ] ]
   ;
 
