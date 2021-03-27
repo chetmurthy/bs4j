@@ -37,7 +37,7 @@ type t =
   }
 
 let spec_line = Str.regexp "=== \\(.*\\)"
-let sect_line = Str.regexp "--- \\(.*\\)"
+let sect_line = Str.regexp "--- \\([^:]*\\)"
 
 let match_extract rex groupl s =
   if not (Str.string_match rex s 0) then
@@ -96,6 +96,17 @@ let find_sect t sname =
   match List.assoc sname t.sections with
     l -> Some l
   | exception Not_found -> None
+
+let tags_line_re = Str.regexp "--- tags: *\\(.*\\)"
+
+let tags t =
+  let line = match List.assoc "tags" t.sections with
+      line::_ -> line
+    | exception Not_found -> failwith (Fmt.(str "%s: missing tags line" t.filename)) in
+  match match_extract tags_line_re [1] line with
+    None -> failwith (Fmt.(str "%s: missing malformed line" t.filename))
+  | Some [s] -> String.split_on_char ' ' s
+  | _ -> assert false
 
 let matches ~pattern text =
   match Str.search_forward (Str.regexp pattern) text 0 with

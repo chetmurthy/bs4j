@@ -123,7 +123,7 @@ let json_escaped = [%sedlex.regexp? "\\" , ( 0x22 | 0x5C | 0x2F | 0x62 | 0x66 | 
 let json_string_char = [%sedlex.regexp? (json_unescaped | json_escaped ) ]
 let json_string = [%sedlex.regexp?  '"' , (Star json_string_char) , '"']
 
-let yamlscalar_char = [%sedlex.regexp? Compl (Chars "-[]{}:,#\\\"\r\n'") ]
+let yamlscalar_char = [%sedlex.regexp? Compl (Chars "-[]{}|>:,#\\\"\r\n'") ]
 let yamlscalar_startchar = [%sedlex.regexp? Sub (yamlscalar_char, (linews| '.' | '!' | '&' | '*')) ]
 let yamlscalar_endchar = [%sedlex.regexp? Sub (yamlscalar_char, linews) ]
 let yamlscalar = [%sedlex.regexp?  yamlscalar_startchar, Opt (Star yamlscalar_char, yamlscalar_endchar) ]
@@ -216,12 +216,7 @@ let unquote_yaml_sqstring s =
       unrec1 ()
 
     | Star linews, "\n", Star linews ->
-      Buffer.add_char buf ' ' ;
-      unrec1 ()
-
-    | Plus(Star linews, "\n", Star linews) ->
-      Buffer.add_char buf '\n' ;
-      unrec1 ()
+      unrec2 1
 
     | Plus linews ->
       Buffer.add_string buf (Sedlexing.Latin1.lexeme lb) ;
@@ -232,6 +227,24 @@ let unquote_yaml_sqstring s =
       unrec1 ()
     | "'" -> Buffer.contents buf
     | _ -> failwith "unquote_sqstring: internal error"
+
+  and unrec2 n =
+    match%sedlex lb with
+    | Star linews, "\n", Star linews ->
+      unrec2 (n+1)
+
+    | _ ->
+      if n = 1 then begin
+        Buffer.add_char buf ' ' ;
+        unrec1 ()
+      end
+      else begin
+        for i = 2 to n do
+          Buffer.add_char buf '\n'
+        done ;
+        unrec1 ()
+      end
+
   in unrec0 ()
 
 let unquote_yaml_dqstring s =
