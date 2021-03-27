@@ -404,7 +404,8 @@ let fold_lines0 l =
 
   in String.concat "" (frec l)
 
-let unquote_rawstring ~fold ~chomp indent s =
+let unquote_rawstring ~fold ~chomp loc s =
+  let indent = Ploc.first_pos loc - Ploc.bol_pos loc in
   let sofs = (String.index s '(') + 1 in
   let indent = indent + sofs in
   let eofs = (String.rindex s ')') in

@@ -184,12 +184,10 @@ EXTEND
   
   scalar_rawstring:
     [ [ (fold, chomp) = fold_chomp ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
-        let indent = Ploc.first_pos l - Ploc.bol_pos l in
-        (unquote_rawstring ~{fold} ~{chomp} indent s)
+        (unquote_rawstring ~{fold} ~{chomp} l s)
 
       | (fold, chomp) = fold_chomp ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
-        let indent = Ploc.first_pos l - Ploc.bol_pos l in
-        (unquote_rawstring ~{fold} ~{chomp} indent s)
+        (unquote_rawstring ~{fold} ~{chomp} l s)
     ] ]
   ;
 
@@ -236,8 +234,7 @@ EXTEND
 
   flow_scalar:
     [ [ (fold,chomp) = fold_chomp ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
-        let indent = Ploc.first_pos l - Ploc.bol_pos l in
-        `String (unquote_rawstring ~{fold=fold} ~{chomp} indent s)
+        `String (unquote_rawstring ~{fold=fold} ~{chomp} l s)
 
       | s = YAMLSTRING -> `String s
       | s = JSONSTRING -> `String (unquote_jsonstring s)
