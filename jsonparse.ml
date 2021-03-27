@@ -141,13 +141,22 @@ EXTEND
          l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
          -> `Assoc [(string_of_scalar s,v) :: l]
 
-      | ((fold, chomp), s, l) = scalar_rawstring ->
+      | (fold,chomp) = must_fold_chomp ; (s,l) = scalar_rawstring0 ->
          let s = unquote_rawstring ~{fold} ~{chomp} l s in
         `String s
 
-      | ((fold, chomp), s, l) = scalar_rawstring ; ":" ; v=json ;
+      | (fold, chomp) = must_fold_chomp ; (s,l) = scalar_rawstring0 ; ":" ; v=json ;
          rest = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ->
          let s = unquote_rawstring ~{fold} ~{chomp} l s in
+         `Assoc [(s,v) :: rest]
+
+      | (s,l) = scalar_rawstring0 ->
+         let s = unquote_rawstring ~{fold=False} ~{chomp=False} l s in
+        `String s
+
+      | (s,l) = scalar_rawstring0 ; ":" ; v=json ;
+         rest = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ->
+         let s = unquote_rawstring ~{fold=False} ~{chomp=False} l s in
          `Assoc [(s,v) :: rest]
 
       | s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (String.concat " " [s::l])
