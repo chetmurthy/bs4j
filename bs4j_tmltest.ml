@@ -130,6 +130,18 @@ let skiplist = [
 ; ("8G76.tml", Some "empty documents aren't supported")
 ; ("4V8U.tml", Some "special chars in scalars require quotations")
 ; ("SSW6.tml", Some "yaml quotations")
+; ("K527.tml", Some "whitespace precision is best done with raw-string-literals")
+; ("5BVJ.tml", Some "whitespace precision is best done with raw-string-literals")
+; ("6VJK.tml", Some "whitespace precision is best done with raw-string-literals")
+; ("TS54.tml", Some "whitespace precision is best done with raw-string-literals")
+; ("XV9V.tml", Some "yaml quotations")
+; ("6JQW.tml", Some "whitespace precision is best done with raw-string-literals")
+; ("EXG3.tml", Some "special chars in scalars require quotations")
+; ("9YRD.tml", Some "whitespace precision is best done with raw-string-literals")
+; ("7A4E.tml", Some "yaml quotations")
+; ("A6F9.tml", Some "special chars in scalars require quotations")
+; ("G4RS.tml", Some "yaml quotations")
+; ("NB6Z.tml", Some "special chars in scalars require quotations")
 ]
 
 let select_tests ?(exclude_tags=[]) ?(only_tags=[]) l =
@@ -152,14 +164,18 @@ let make_test t =
     msg ->
     let msg = match msg with None -> t.name | Some s -> s in
     let name = Fmt.(str "%s (%s) [%a]" t.name base (list ~sep:(const string " ") string) tagsl) in
-    name >:: (fun ctxt ->
-        Tml.warning (Fmt.str "%s: Not handled: %s" t.filename msg)
-      )
+    base >::: [
+      name >:: (fun ctxt ->
+          Tml.warning (Fmt.str "%s: Not handled: %s" t.filename msg)
+        )
+    ]
   | exception Not_found ->
-    let name = Fmt.(str "%s (%s) [%a]" t.name base (list ~sep:(const string " ") string) tagsl) in
-    name >:: (fun ctxt ->
-        BS4J.exec t
-      )
+    base >::: [
+      let name = Fmt.(str "%s (%s) [%a]" t.name base (list ~sep:(const string " ") string) tagsl) in
+      name >:: (fun ctxt ->
+          BS4J.exec t
+        )
+    ]
 
 let parse1 n =
   let file =
