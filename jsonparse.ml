@@ -159,7 +159,13 @@ EXTEND
          let s = unquote_rawstring ~{fold=False} ~{chomp=False} l s in
          `Assoc [(s,v) :: rest]
 
+      | (fold, chomp) = must_fold_chomp ;
+        s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (foldchomp_yamlstrings ~{fold} ~{chomp} [s::l])
+      | (fold, chomp) = must_fold_chomp ;
+        INDENT ; s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] ; DEDENT -> `String (foldchomp_yamlstrings ~{fold} ~{chomp} [s::l])
+
       | s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (foldchomp_yamlstrings ~{fold=True} ~{chomp=True} [s::l])
+
       | s = YAMLSTRING ; ":" ; v=json ;
          l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
          -> `Assoc [(s,v) :: l]

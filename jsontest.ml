@@ -257,6 +257,49 @@ hr:  65    # Home runs
            (YAMLSTRING "b c"); (DEDENT (1, 3)); (DEDENT (0, 1)); EOF]
           (tokens_of_string {|a: b c|})
       )
+  ; "yamlstring-2" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(YAMLSTRING "a"); (YAMLSTRING "b"); EOF]
+          (tokens_of_string {|
+a
+b
+|})
+      )
+  ; "yamlstring-3" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(INDENT (0, 2)); (YAMLSTRING "a"); (YAMLSTRING "b"); (YAMLSTRING "c"); (DEDENT (0, 2)); EOF]
+          (tokens_of_string {|
+  a
+  b
+  c
+|})
+      )
+
+  ; "yamlstring-2-fold" >:: (fun ctxt ->
+        assert_equal ~printer
+          [GT; (INDENT (0, 1)); (YAMLSTRING "a"); (YAMLSTRING "b"); (YAMLSTRING "c");
+           (DEDENT (0, 1)); EOF]
+          (tokens_of_string {|
+>
+ a
+ b
+ c
+|})
+      )
+  ; "yamlstring-3-fold" >:: (fun ctxt ->
+        assert_equal ~printer
+          [GTDASH; (INDENT (0, 1)); (YAMLSTRING "a"); (YAMLSTRING "b");
+           (YAMLSTRING "c"); (DEDENT (0, 1)); EOF]
+          (tokens_of_string {|
+>-
+ a
+ b
+ c
+|})
+      )
+
+
+
   ; "dqstring-1" >:: (fun ctxt ->
         assert_equal ~printer
           [(YAMLSTRING "unicode"); COLON; (INDENT (0, 1)); (INDENT (1, 9));
@@ -460,6 +503,73 @@ avg: 0.288
           (`O ([("a", `String ("b c"))]))
           (of_string_exn {|a: b c|})
       )
+
+  ; "yamlstring-2" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("a b"))
+          (of_string_exn {|
+a
+b
+|})
+      )
+  ; "yamlstring-3" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("a b c"))
+          (of_string_exn {|
+  a
+  b
+  c
+|})
+      )
+  ; "yamlstring-3-fold" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("a b c\n"))
+          (of_string_exn {|
+>
+ a
+ b
+ c
+|})
+      )
+  ; "yamlstring-3-fold-chomp" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("a b c"))
+          (of_string_exn {|
+>-
+ a
+ b
+ c
+|})
+      )
+  ; "yamlstring-4" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`A[`String ("a b c")])
+          (of_string_exn {|-
+  a
+  b
+  c
+|})
+      )
+  ; "yamlstring-4-fold" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`A ([`String ("a b c\n")]))
+          (of_string_exn {|- >
+ a
+ b
+ c
+|})
+      )
+  ; "yamlstring-4-fold-chomp" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`A ([`String ("a b c")]))
+          (of_string_exn {|- >-
+ a
+ b
+ c
+|})
+      )
+
+
   ; "dots-1" >:: (fun ctxt ->
       assert_raises_exn_pattern
         "EOI expected after [docs] (in [docs_eoi])"
@@ -687,13 +797,13 @@ rbi:
           ))
         (of_string_exn {|name: Mark McGwire
 accomplishment: >
-  R"(Mark set a major league
-     home run record in 1998.
-     )"
-stats:
-  R"(65 Home Runs
-     0.278 Batting Average
-     )"
+  Mark set a major league
+  home run record in 1998.
+
+stats: |
+  65 Home Runs
+  0.278 Batting Average
+
 |})
       )
   ; "2.17" >:: (fun ctxt ->
@@ -803,10 +913,10 @@ picture: |
     )"
 
 application specific tag: |
- R"(The semantics of the tag
+    The semantics of the tag
     above may be different for
     different documents.
-    )"
+
 |})
       )
   ; "2.26" >:: (fun ctxt ->
@@ -980,12 +1090,12 @@ mapping: { sky: blue, sea: green }|})
         (`O (
             [("literal", `String ("some\ntext\n")); ("folded", `String ("some text"))]))
         (of_string_exn {|literal: |
-  R"(some
-     text
-     )"
-folded: >
-  R"(some
-     text)"|})
+  some
+  text
+
+folded: >-
+  some
+  text|})
       )
   ; "5.8" >:: (fun ctxt ->
       assert_equal ~printer
@@ -1012,9 +1122,9 @@ double: "text"|})
       assert_equal ~printer
         (`String ("Line break (no glyph)\nLine break (glyphed)\n"))
         (of_string_exn {||
-  R"(Line break (no glyph)
-     Line break (glyphed)
-     )"
+  Line break (no glyph)
+  Line break (glyphed)
+
 |})
       )
   ; "5.12" >:: (fun ctxt ->
@@ -1124,9 +1234,9 @@ Folding:
   "Empty line
    	
   as a line feed"
-Chomping:
-  R"(Clipped empty lines
-     )"
+Chomping: >
+  Clipped empty lines
+
  |})
       )
   ; "6.6" >:: (fun ctxt ->
@@ -1391,9 +1501,9 @@ let block_styles = "block styles" >::: [
              `String (" strip")]
           ))
         (of_string_exn {|
-- # Empty header
- R"(literal
-    )"
+- | # Empty header
+ literal
+
 - # Indentation indicator
  R"( folded
     )"
@@ -1408,9 +1518,9 @@ let block_styles = "block styles" >::: [
   ; "8.2" >:: (fun ctxt ->
       assert_equal ~printer
         (`A [`String"detected\n"; `String"\n\n# detected\n"; `String" explicit\n"; `String"\t detected\n"])
-        (of_string_exn {|-
- R"(detected
-    )"
+        (of_string_exn {|- |
+ detected
+
 -
  R"(
     
@@ -1442,14 +1552,14 @@ let block_styles = "block styles" >::: [
             [("strip", `String ("text")); ("clip", `String ("text\n"));
              ("keep", `String ("text\n"))]
           ))
-        (of_string_exn {|strip:
+        (of_string_exn {|strip: |-
   text
-clip:
-  R"(text
-     )"
-keep:
-  R"(text
-     )"
+clip: |
+  text
+
+keep: |
+  text
+
 |})
       )
   ; "8.5" >:: (fun ctxt ->
@@ -1522,9 +1632,9 @@ keep: "\n"
       assert_equal ~printer
         (`String ("folded text\n"))
         (of_string_exn {|>
- R"(folded
-    text
-    )"
+ folded
+ text
+
 
 |})
       )
@@ -1677,9 +1787,9 @@ R"(
           ))
         (of_string_exn {|
 - null # Empty
-- 
- R"(block node
-    )"
+- |
+ block node
+
 - - one # Compact
   - two # sequence
 - one: two # Compact mapping|})
@@ -1714,8 +1824,8 @@ R"(block key
         (of_string_exn {|-
   "flow in block"
 - >
- R"(Block scalar
-    )"
+ Block scalar
+
 - # Block collection
   foo : bar
 |})
@@ -1723,10 +1833,10 @@ R"(block key
   ; "8.21" >:: (fun ctxt ->
       assert_equal ~printer
         (`O ([("literal", `String ("value\n")); ("folded", `String ("value"))]))
-        (of_string_exn {|literal: 
-  R"(value
-     )"
-folded:
+        (of_string_exn {|literal: |
+  value
+
+folded: >-
  value|})
       )
   ; "8.22" >:: (fun ctxt ->
