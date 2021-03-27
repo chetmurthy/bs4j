@@ -3,7 +3,7 @@ open OUnitTest
 
 let tml_dir = "/home/chet/Hack/Github/yaml/yaml-test-suite/test"
 
-let only_tags = ["flow"]
+let only_tags = []
 let exclude_tags = ["anchor"; "alias"; "explicit-key"; "tag"; "complex-key"; "empty-key"] @ ["error"]
 let skiplist = [
   ("BS4K.tml", None)
@@ -159,6 +159,22 @@ let skiplist = [
 ; ("9SA2.tml", Some "yaml quotations")
 ; ("4ABK.tml", Some "special chars in scalars require quotations, empty values, trailing comma")
 ; ("8KB6.tml", Some "multi line scalars in flow keys require quotations, empty values")
+; ("F6MC.tml", Some "whitespace precision is best done with raw-string-literals")
+; ("AZ63.tml", Some "subsidiary values MUST be indented")
+; ("RLU9.tml", Some "subsidiary values MUST be indented")
+; ("D83L.tml", Some "explicit indent is superfluous")
+; ("AVM7.tml", Some "empty documents aren't supported")
+; ("HWV9.tml", Some "empty documents aren't supported")
+; ("QT73.tml", Some "empty documents aren't supported")
+; ("S4T7.tml", Some "doc end-delimiter can only come after start-delimiter")
+; ("K858.tml", Some "empty scalar values are unsupported")
+; ("HMK4.tml", Some "whitespace precision is best done with raw-string-literals")
+; ("M7A3.tml", Some "doc end-delimiter can only come after start-delimiter")
+; ("W42U.tml", Some "empty value")
+; ("AZW3.tml", Some "special chars in scalars require quotations, empty values, trailing comma")
+; ("6SLA.tml", Some "yaml quotations")
+; ("7Z25.tml", Some "trailing text after document")
+; ("98YD.tml", Some "empty document with comments")
 ]
 
 let select_tests ?(exclude_tags=[]) ?(only_tags=[]) l =
