@@ -35,8 +35,8 @@ type token = Jsontoken.token =
   | DASH
   | DASHDASHDASH
   | DOTDOTDOT
-  | BAR
-  | GT
+  | BAR | BARDASH
+  | GT | GTDASH
   | PLUS
   | DECIMAL of string
   | HEXADECIMAL of string
@@ -153,6 +153,34 @@ a:
            EOF]
           (tokens_of_string {|
 R"a(foo)a"
+|})
+      )
+  ; "rawstring-fold" >:: (fun ctxt ->
+        assert_equal ~printer
+          [GT; (INDENT (0, 1)); (RAWSTRING "R\"a(foo)a\""); (DEDENT (0, 1)); EOF]
+          (tokens_of_string {|
+>R"a(foo)a"
+|})
+      )
+  ; "rawstring-lit" >:: (fun ctxt ->
+        assert_equal ~printer
+          [BAR; (INDENT (0, 1)); (RAWSTRING "R\"a(foo)a\""); (DEDENT (0, 1)); EOF]
+          (tokens_of_string {|
+|R"a(foo)a"
+|})
+      )
+  ; "rawstring-fold-chomp" >:: (fun ctxt ->
+        assert_equal ~printer
+          [GTDASH; (INDENT (0, 2)); (RAWSTRING "R\"a(foo)a\""); (DEDENT (0, 2)); EOF]
+          (tokens_of_string {|
+>-R"a(foo)a"
+|})
+      )
+  ; "rawstring-lit-chomp" >:: (fun ctxt ->
+        assert_equal ~printer
+          [BARDASH; (INDENT (0, 2)); (RAWSTRING "R\"a(foo)a\""); (DEDENT (0, 2)); EOF]
+          (tokens_of_string {|
+|-R"a(foo)a"
 |})
       )
   ; "rawstring-1" >:: (fun ctxt ->
@@ -346,6 +374,42 @@ a:
           (`String ("foo"))
           (of_string_exn {|
 R"a(foo)a"
+|})
+      )
+  ; "rawstring-fold" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("foo bar\n"))
+          (of_string_exn {|
+>R"a(foo
+     bar
+     )a"
+|})
+      )
+  ; "rawstring-lit" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("foo\nbar\n"))
+          (of_string_exn {|
+|R"a(foo
+     bar
+     )a"
+|})
+      )
+  ; "rawstring-fold-chomp" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("foo bar"))
+          (of_string_exn {|
+>-R"a(foo
+      bar
+      )a"
+|})
+      )
+  ; "rawstring-lit-chomp" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("foo\nbar"))
+          (of_string_exn {|
+|-R"a(foo
+      bar
+      )a"
 |})
       )
   ; "rawstring-1" >:: (fun ctxt ->

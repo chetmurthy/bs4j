@@ -25,7 +25,7 @@ test:: all
 #	./yamltest || true
 
 testsuite:: test
-	./ocamlyaml_tmltest || true
+#	./ocamlyaml_tmltest || true
 	./bs4j_tmltest || true
 
 .SUFFIXES: .mll .ml .cmo .cmx

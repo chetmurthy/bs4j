@@ -31,7 +31,9 @@ value compatible_lexer lb =
   | DASHDASHDASH -> ("","---")
   | DOTDOTDOT -> ("","...")
   | BAR -> ("","|")
+  | BARDASH -> ("","|-")
   | GT -> ("",">")
+  | GTDASH -> ("",">-")
   | PLUS -> ("","+")
   | YAMLSTRING "false" -> ("","false")
   | YAMLSTRING "true" -> ("","true")
@@ -171,26 +173,21 @@ EXTEND
     ] ]
   ;
 
+  fc : [ [ ">" -> (True, False)
+         | "|" -> (False, False)
+         | ">-" -> (True, True)
+         | "|-" -> (False, True)
+         | -> (False, False)
+         ] ] ;
+
   scalar_rawstring:
-    [ [ s = RAWSTRING ->
-        let indent = Ploc.first_pos loc - Ploc.bol_pos loc in
-        (unquote_rawstring ~{fold=False} indent s)
-
-      | ">" ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
+    [ [ (fold, chomp) = fc ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
-        (unquote_rawstring ~{fold=True} indent s)
+        (unquote_rawstring ~{fold} ~{chomp} indent s)
 
-      | ">" ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
+      | (fold, chomp) = fc ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
-        (unquote_rawstring ~{fold=True} indent s)
-
-      | "|" ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
-        let indent = Ploc.first_pos l - Ploc.bol_pos l in
-        (unquote_rawstring ~{fold=False} indent s)
-
-      | "|" ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
-        let indent = Ploc.first_pos l - Ploc.bol_pos l in
-        (unquote_rawstring ~{fold=False} indent s)
+        (unquote_rawstring ~{fold} ~{chomp} indent s)
     ] ]
   ;
 
@@ -236,17 +233,9 @@ EXTEND
   ;
 
   flow_scalar:
-    [ [ s = RAWSTRING ->
-        let indent = Ploc.first_pos loc - Ploc.bol_pos loc in
-        `String (unquote_rawstring ~{fold=False} indent s)
-
-      | ">" ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
+    [ [ (fold,chomp) = fc ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
-        `String (unquote_rawstring ~{fold=True} indent s)
-
-      | "|" ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
-        let indent = Ploc.first_pos l - Ploc.bol_pos l in
-        `String (unquote_rawstring ~{fold=False} indent s)
+        `String (unquote_rawstring ~{fold=fold} ~{chomp} indent s)
 
       | s = YAMLSTRING -> `String s
       | s = JSONSTRING -> `String (unquote_jsonstring s)

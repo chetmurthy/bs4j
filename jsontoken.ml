@@ -390,8 +390,7 @@ let fold_lines0 l =
     | l1::l2::tl when l1 <> "" && l2 <> "" && String.get l1 0 <> ' ' && String.get l2 0 <> ' ' ->
       l1::" "::(frec (l2::tl))
 
-    | [l1] when l1 <> "" -> [l1]
-    | [""] -> []
+    | [l1] -> [l1]
 
     | l1::tl -> l1::"\n"::(frec tl)
 
@@ -399,7 +398,7 @@ let fold_lines0 l =
 
   in String.concat "" (frec l)
 
-let unquote_rawstring ~fold indent s =
+let unquote_rawstring ~fold ~chomp indent s =
   let sofs = (String.index s '(') + 1 in
   let indent = indent + sofs in
   let eofs = (String.rindex s ')') in
@@ -407,6 +406,14 @@ let unquote_rawstring ~fold indent s =
   let s = String.sub s sofs (eofs-sofs) in
   let l = String.split_on_char '\n' s in
   let l = (List.hd l) :: (List.map (consume_indent indent) (List.tl l)) in
+  let l = if chomp then
+      List.fold_right (fun s acc ->
+          match (s,acc) with
+            ("",[]) -> []
+          | (h,t) -> h::t)
+        l []
+    else l in
+
   if fold then
     fold_lines l
   else String.concat "\n" l
@@ -422,8 +429,8 @@ type token =
   | DASH
   | DASHDASHDASH
   | DOTDOTDOT
-  | BAR
-  | GT
+  | BAR | BARDASH
+  | GT | GTDASH
   | PLUS
   | DECIMAL of string
   | HEXADECIMAL of string
@@ -621,7 +628,9 @@ let rec rawtoken st =
   | "}" -> (RBRACE,pos())
   | ":" -> (COLON,pos())
   | "|" -> (BAR,pos())
+  | "|-" -> (BARDASH,pos())
   | ">" -> (GT,pos())
+  | ">-" -> (GTDASH,pos())
   | "+" -> (PLUS,pos())
   | "," -> (COMMA,pos())
   | "-" -> (DASH,pos())
@@ -660,8 +669,8 @@ let rec jsontoken0 st =
       | (RBRACE, _) -> failwith "jsontoken: '}' found in block style"
       | (LBRACE, _) as t -> St.push_flow st ; t
       | (COLON, _) as t -> increment_indent_with st t
-      | (GT, _) as t -> t
-      | (BAR, _) as t -> t
+      | ((GT|GTDASH), _) as t -> t
+      | ((BAR|BARDASH), _) as t -> t
       | (NEWLINE, _) -> St.set_bol st true ; jsontoken0 st
       | t -> handle_indents_with st t
   end
