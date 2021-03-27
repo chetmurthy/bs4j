@@ -46,7 +46,7 @@ value compatible_lexer lb =
   | DECIMAL s -> ("DECIMAL",s)
   | HEXADECIMAL s -> ("HEXADECIMAL",s)
   | OCTAL s -> ("OCTAL",s)
-  | STRING s -> ("STRING", s)
+  | JSONSTRING s -> ("JSONSTRING", s)
   | EOF -> ("EOI","")
 
   ] in
@@ -200,7 +200,7 @@ EXTEND
   ;
 
   scalar_other_string:
-    [ [ s = STRING -> (unquote_string s)
+    [ [ s = JSONSTRING -> (unquote_jsonstring s)
       | s=YAMLSQSTRING -> (unquote_yaml_sqstring s)
       | s=YAMLDQSTRING -> (unquote_yaml_dqstring s)
     ] ]
@@ -249,7 +249,7 @@ EXTEND
         `String (unquote_rawstring ~{fold=False} indent s)
 
       | s = YAMLSTRING -> `String s
-      | s = STRING -> `String (unquote_string s)
+      | s = JSONSTRING -> `String (unquote_jsonstring s)
       | s=YAMLSQSTRING -> `String (unquote_yaml_sqstring s)
       | s=YAMLDQSTRING -> `String (unquote_yaml_dqstring s)
       | n = DECIMAL -> `Float (if n = ".NaN" then nan

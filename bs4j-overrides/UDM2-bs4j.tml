@@ -3,7 +3,7 @@
 --- tags: flow scalar
 
 --- in-yaml
-- { url: Y'http://example.org' }
+- { url: 'http://example.org' }
 
 --- in-json
 [

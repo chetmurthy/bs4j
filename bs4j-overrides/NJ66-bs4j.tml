@@ -5,7 +5,7 @@
 --- in-yaml(<)
     ---
     - { single line: value}
-    - { Y'multi
+    - { 'multi
       line': value}
 
 --- out-yaml(<)

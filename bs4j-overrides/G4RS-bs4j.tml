@@ -3,13 +3,13 @@
 --- tags: spec scalar
 
 --- in-yaml
-unicode: Y"Sosa did fine.\u263A"
+unicode: "Sosa did fine.\u263A"
 control: "\b1998\t1999\t2000\n"
-hex esc: Y"\x0d\x0a is \r\n"
+hex esc: "\x0d\x0a is \r\n"
 
-single: Y'"Howdy!" he cried.'
-quoted: Y' # Not a ''comment''.'
-"tie-fighter": Y'|\-*-/|'
+single: '"Howdy!" he cried.'
+quoted: ' # Not a ''comment''.'
+"tie-fighter": '|\-*-/|'
 
 --- in-json
 {

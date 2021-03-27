@@ -4,7 +4,7 @@
 
 --- in-yaml(<)
     ---
-    Y'plain\value\with\backslashes'
+    'plain\value\with\backslashes'
 
 --- in-json
 "plain\\value\\with\\backslashes"

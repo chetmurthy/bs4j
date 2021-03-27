@@ -3,8 +3,8 @@
 --- tags: mapping edge
 
 --- in-yaml
-- Y'bla"keks': foo
-- Y'bla]keks': foo
+- 'bla"keks': foo
+- 'bla]keks': foo
 
 --- in-json
 [

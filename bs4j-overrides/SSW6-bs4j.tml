@@ -4,7 +4,7 @@
 
 --- in-yaml(<)
     ---
-    Y'here''s to "quotes"'
+    'here''s to "quotes"'
 
 --- in-json
 "here's to \"quotes\""

@@ -4,7 +4,7 @@
 
 --- in-yaml(<)
     ---
-    Y"folded<SPC>
+    "folded<SPC>
     to a space,
     <SPC>
     to a line feed, or <TAB>\

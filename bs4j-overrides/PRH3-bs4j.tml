@@ -3,7 +3,7 @@
 --- tags: single spec scalar whitespace upto-1.2
 
 --- in-yaml
-Y' 1st non-empty
+' 1st non-empty
 
  2nd non-empty<SPC>
 <TAB>3rd non-empty '

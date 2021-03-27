@@ -4,7 +4,7 @@
 
 --- in-yaml(+)
 Folding:
-  Y"Empty line
+  "Empty line
    <TAB>
   as a line feed"
 Chomping: |

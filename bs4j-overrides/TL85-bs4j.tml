@@ -3,7 +3,7 @@
 --- tags: double spec whitespace scalar upto-1.2
 
 --- in-yaml
-Y"
+"
   foo<SPC>
 <SPC>
   <TAB> bar

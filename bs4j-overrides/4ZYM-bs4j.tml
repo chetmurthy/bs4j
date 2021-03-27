@@ -5,7 +5,7 @@
 --- in-yaml
 plain: text
        lines
-quoted: Y"text
+quoted: "text
   <TAB>lines"
 block: |
   R"(text

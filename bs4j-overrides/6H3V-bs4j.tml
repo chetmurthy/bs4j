@@ -3,7 +3,7 @@
 --- tags: scalar single
 
 --- in-yaml
-Y'foo: bar\': Y"baz'"
+'foo: bar\': "baz'"
 
 --- in-json
 {

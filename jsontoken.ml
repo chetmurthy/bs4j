@@ -121,7 +121,7 @@ let ident = [%sedlex.regexp? letter, Star alphanum]
 let json_unescaped = [%sedlex.regexp? 0x20 .. 0x21 | 0x23 .. 0x5B | 0x5D .. 0x10FFFF ]
 let json_escaped = [%sedlex.regexp? "\\" , ( 0x22 | 0x5C | 0x2F | 0x62 | 0x66 | 0x6E | 0x72 | 0x74 | (0x75, Rep(hexdigit,4)) ) ]
 let json_string_char = [%sedlex.regexp? (json_unescaped | json_escaped ) ]
-let json_string = [%sedlex.regexp?  '"' , (Star json_string_char) , '"']
+let json_string = [%sedlex.regexp?  "J\"" , (Star json_string_char) , '"']
 
 let yamlscalar_char = [%sedlex.regexp? Compl (Chars "-[]{}|>:,#\\\"\r\n'") ]
 let yamlscalar_startchar = [%sedlex.regexp? Sub (yamlscalar_char, (linews| '.' | '!' | '&' | '*')) ]
@@ -130,7 +130,7 @@ let yamlscalar = [%sedlex.regexp?  yamlscalar_startchar, Opt (Star yamlscalar_ch
 
 let yaml_basic_string_char = [%sedlex.regexp? 0x9 | 0x20 .. 0x10ffff ]
 let yaml_unescaped_sqstring_char = [%sedlex.regexp? Sub((yaml_basic_string_char | '\n'), '\'')  ]
-let yaml_sqstring = [%sedlex.regexp?  "Y'" , (Star (yaml_unescaped_sqstring_char | "''")) , "'" ]
+let yaml_sqstring = [%sedlex.regexp?  "'" , (Star (yaml_unescaped_sqstring_char | "''")) , "'" ]
 
 let yaml_basic_dqstring_char = [%sedlex.regexp? Sub(yaml_basic_string_char, ('"' | '\\')) ]
 let yaml_dqstring_escaped_char = [%sedlex.regexp? "\\",
@@ -157,16 +157,16 @@ let yaml_dqstring_escaped_char = [%sedlex.regexp? "\\",
 let yaml_dqstring_linebreak_1 = [%sedlex.regexp? ("\\", "\n", Star(' '|'\t'), Opt("\\")) ]
 let yaml_dqstring_linebreak_2 = [%sedlex.regexp? ("\n" , Star(' '|'\t')) ]
 let yaml_dqstring_char = [%sedlex.regexp? (yaml_basic_dqstring_char | yaml_dqstring_escaped_char ) ]
-let yaml_dqstring = [%sedlex.regexp? "Y\"" , (Star (yaml_dqstring_char | yaml_dqstring_linebreak_1 | Plus(yaml_dqstring_linebreak_2))), '"' ]
+let yaml_dqstring = [%sedlex.regexp? "\"" , (Star (yaml_dqstring_char | yaml_dqstring_linebreak_1 | Plus(yaml_dqstring_linebreak_2))), '"' ]
 
 let comment = [%sedlex.regexp? '#' , Star(Compl '\n') ]
 
-let unquote_string s =
+let unquote_jsonstring s =
   let buf = Buffer.create (String.length s) in
   let lb = Sedlexing.Latin1.from_gen (gen_of_string s) in
   let rec unrec0 () =
     match%sedlex lb with
-      '"' -> unrec1 ()
+      "J\"" -> unrec1 ()
     | _ -> failwith "unquote_string: unexpected character"
   and unrec1 () =
     match%sedlex lb with
@@ -207,7 +207,7 @@ let unquote_yaml_sqstring s =
   let lb = Sedlexing.Latin1.from_gen (gen_of_string s) in
   let rec unrec0 () =
     match%sedlex lb with
-    | "Y'" -> unrec1 ()
+    | "'" -> unrec1 ()
     | _ -> failwith "unquote_sqstring: unexpected character"
   and unrec1 () =
     match%sedlex lb with
@@ -252,7 +252,7 @@ let unquote_yaml_dqstring s =
   let lb = Sedlexing.Latin1.from_gen (gen_of_string s) in
   let rec unrec0 () =
     match%sedlex lb with
-    | "Y\"" -> unrec1 ()
+    | "\"" -> unrec1 ()
     | _ -> failwith "unquote_dqstring: unexpected character"
   and unrec1 () =
     match%sedlex lb with
@@ -428,7 +428,7 @@ type token =
   | DECIMAL of string
   | HEXADECIMAL of string
   | OCTAL of string
-  | STRING of string
+  | JSONSTRING of string
   | RAWSTRING of string
   | YAMLSTRING of string
   | YAMLSQSTRING of string
@@ -609,7 +609,7 @@ let rec rawtoken st =
   | decimal_float -> (DECIMAL (Sedlexing.Latin1.lexeme buf),pos())
   | hexadecimal_integer -> (HEXADECIMAL (Sedlexing.Latin1.lexeme buf),pos())
   | octal_integer -> (OCTAL (Sedlexing.Latin1.lexeme buf),pos())
-  | json_string -> (STRING (Sedlexing.Latin1.lexeme buf),pos())
+  | json_string -> (JSONSTRING (Sedlexing.Latin1.lexeme buf),pos())
   | yaml_sqstring -> (YAMLSQSTRING (Sedlexing.Latin1.lexeme buf),pos())
   | yaml_dqstring -> (YAMLDQSTRING (Sedlexing.Latin1.lexeme buf),pos())
   | "R\"" ->

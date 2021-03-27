@@ -3,7 +3,7 @@
 --- tags: double spec scalar whitespace upto-1.2
 
 --- in-yaml
-Y"folded<SPC>
+"folded<SPC>
 to a space,<TAB>
 <SPC>
 to a line feed, or <TAB>\

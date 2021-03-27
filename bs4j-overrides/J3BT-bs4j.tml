@@ -4,7 +4,7 @@
 
 --- in-yaml(<)
     # Tabs and spaces
-    quoted: Y"Quoted <TAB>"
+    quoted: "Quoted <TAB>"
     block:<TAB>|
       R"(void main() {
          <TAB>printf("Hello, world!\n");

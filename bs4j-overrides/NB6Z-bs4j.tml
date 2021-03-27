@@ -4,7 +4,7 @@
 
 --- in-yaml(<)
     key:
-      Y"value
+      "value
       with
       <TAB>
       tabs"

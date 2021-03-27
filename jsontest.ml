@@ -41,7 +41,7 @@ type token = Jsontoken.token =
   | DECIMAL of string
   | HEXADECIMAL of string
   | OCTAL of string
-  | STRING of string
+  | JSONSTRING of string
   | RAWSTRING of string
   | YAMLSTRING of string
   | YAMLSQSTRING of string
@@ -86,16 +86,16 @@ c: d
       )
   ; "flow" >:: (fun ctxt ->
         assert_equal ~printer
-          [LBRACKET; (STRING "\"a\""); COMMA;
-           (STRING "\"b\""); RBRACKET;
+          [LBRACKET; (YAMLDQSTRING "\"a\""); COMMA;
+           (YAMLDQSTRING "\"b\""); RBRACKET;
            EOF]
           (tokens_of_string {|["a", "b"]|})
       )
   ; "flow-2" >:: (fun ctxt ->
         assert_equal ~printer
           [(YAMLSTRING "a"); COLON; (INDENT (0, 1));
-           LBRACKET; (STRING "\"a\""); COMMA;
-           (STRING "\"b\""); RBRACKET; (DEDENT (0, 1));
+           LBRACKET; (YAMLDQSTRING "\"a\""); COMMA;
+           (YAMLDQSTRING "\"b\""); RBRACKET; (DEDENT (0, 1));
            EOF]
           (tokens_of_string {|
 a:
@@ -232,43 +232,43 @@ hr:  65    # Home runs
   ; "dqstring-1" >:: (fun ctxt ->
         assert_equal ~printer
           [(YAMLSTRING "unicode"); COLON; (INDENT (0, 1)); (INDENT (1, 9));
-           (YAMLDQSTRING "Y\"Sosa did fine.\\u263A\""); (DEDENT (1, 9));
+           (YAMLDQSTRING "\"Sosa did fine.\\u263A\""); (DEDENT (1, 9));
            (DEDENT (0, 1)); EOF]
-          (tokens_of_string {|unicode: Y"Sosa did fine.\u263A"|})
+          (tokens_of_string {|unicode: "Sosa did fine.\u263A"|})
       )
   ; "dqstring-2" >:: (fun ctxt ->
         assert_equal ~printer
           [(YAMLSTRING "control"); COLON; (INDENT (0, 1)); (INDENT (1, 9));
-           (YAMLDQSTRING "Y\"\\b1998\\t1999\\t2000\\n\""); (DEDENT (1, 9));
+           (YAMLDQSTRING "\"\\b1998\\t1999\\t2000\\n\""); (DEDENT (1, 9));
            (DEDENT (0, 1)); EOF]
-          (tokens_of_string {|control: Y"\b1998\t1999\t2000\n"|})
+          (tokens_of_string {|control: "\b1998\t1999\t2000\n"|})
       )
   ; "dqstring-3" >:: (fun ctxt ->
         assert_equal ~printer
           [(YAMLSTRING "hex esc"); COLON; (INDENT (0, 1)); (INDENT (1, 9));
-           (YAMLDQSTRING "Y\"\\x0d\\x0a is \\r\\n\""); (DEDENT (1, 9));
+           (YAMLDQSTRING "\"\\x0d\\x0a is \\r\\n\""); (DEDENT (1, 9));
            (DEDENT (0, 1)); EOF]
-          (tokens_of_string {|hex esc: Y"\x0d\x0a is \r\n"|})
+          (tokens_of_string {|hex esc: "\x0d\x0a is \r\n"|})
       )
   ; "sqstring-1" >:: (fun ctxt ->
         assert_equal ~printer
           [(YAMLSTRING "single"); COLON; (INDENT (0, 1)); (INDENT (1, 8));
-           (YAMLSQSTRING "Y'\"Howdy!\" he cried.'"); (DEDENT (1, 8)); (DEDENT (0, 1));
+           (YAMLSQSTRING "'\"Howdy!\" he cried.'"); (DEDENT (1, 8)); (DEDENT (0, 1));
            EOF]
-          (tokens_of_string {|single: Y'"Howdy!" he cried.'|})
+          (tokens_of_string {|single: '"Howdy!" he cried.'|})
       )
   ; "sqstring-2" >:: (fun ctxt ->
         assert_equal ~printer
           [(YAMLSTRING "quoted"); COLON; (INDENT (0, 1)); (INDENT (1, 8));
-           (YAMLSQSTRING "Y' # Not a ''comment''.'"); (DEDENT (1, 8));
+           (YAMLSQSTRING "' # Not a ''comment''.'"); (DEDENT (1, 8));
            (DEDENT (0, 1)); EOF]
-          (tokens_of_string {|quoted: Y' # Not a ''comment''.'|})
+          (tokens_of_string {|quoted: ' # Not a ''comment''.'|})
       )
   ; "sqstring-3" >:: (fun ctxt ->
         assert_equal ~printer
-          [(YAMLSQSTRING "Y'tie-fighter'"); COLON; (INDENT (0, 1)); (INDENT (1, 16));
-           (YAMLSQSTRING "Y'|\\-*-/|'"); (DEDENT (1, 16)); (DEDENT (0, 1)); EOF]
-          (tokens_of_string {|Y'tie-fighter': Y'|\-*-/|'|})
+          [(YAMLSQSTRING "'tie-fighter'"); COLON; (INDENT (0, 1)); (INDENT (1, 15));
+           (YAMLSQSTRING "'|\\-*-/|'"); (DEDENT (1, 15)); (DEDENT (0, 1)); EOF]
+          (tokens_of_string {|'tie-fighter': '|\-*-/|'|})
       )
   ]
 
@@ -642,13 +642,13 @@ stats:
              ("quoted", `String (" # Not a 'comment'."));
              ("tie-fighter", `String ("|\\-*-/|"))]
           ))
-        (of_string_exn {|unicode: Y"Sosa did fine.\u263A"
-control: Y"\b1998\t1999\t2000\n"
-hex esc: Y"\x0d\x0a is \r\n"
+        (of_string_exn {|unicode: "Sosa did fine.\u263A"
+control: "\b1998\t1999\t2000\n"
+hex esc: "\x0d\x0a is \r\n"
 
-single: Y'"Howdy!" he cried.'
-quoted: Y' # Not a ''comment''.'
-Y'tie-fighter': Y'|\-*-/|'|})
+single: '"Howdy!" he cried.'
+quoted: ' # Not a ''comment''.'
+'tie-fighter': '|\-*-/|'|})
       )
   ; "2.18" >:: (fun ctxt ->
       assert_equal ~printer
@@ -660,7 +660,7 @@ Y'tie-fighter': Y'|\-*-/|'|})
   This unquoted scalar
   spans many lines.
 
-quoted: Y"So does this
+quoted: "So does this
   quoted scalar.\n"
 |})
       )
@@ -699,7 +699,7 @@ not a number: .NaN|})
           ))
         (of_string_exn {|null: null
 booleans: [ true, false ]
-string: Y'012345'|})
+string: '012345'|})
       )
   ; "2.22" >:: (fun ctxt ->
       assert_equal ~printer
@@ -927,7 +927,7 @@ folded: >
       assert_equal ~printer
         (`O ([("single", `String ("text")); ("double", `String ("text"))]))
         (of_string_exn {|
-single: Y'text'
+single: 'text'
 double: "text"|})
       )
   ; "5.9" >:: (fun ctxt ->
@@ -962,7 +962,7 @@ double: "text"|})
                                  }"))]
           ))
         (of_string_exn {|# Tabs and spaces
-quoted: Y"Quoted 	"
+quoted: "Quoted 	"
 block:	|
   R"(void main() {
      	printf("Hello, world!\n");
@@ -971,7 +971,7 @@ block:	|
   ; "5.13" >:: (fun ctxt ->
       assert_equal ~printer
         (`String ("Fun with \\ \" \007 \b \027 \012 \n \r \t \011 \000   \160 \133 \226\128\168 \226\128\169 A A A"))
-        (of_string_exn {|Y"Fun with \\
+        (of_string_exn {|"Fun with \\
 \" \a \b \e \f
 \n \r \t \v \0
 \  \_ \N \L \P
@@ -1043,7 +1043,7 @@ a:\n\
         (of_string_exn {|
 plain: text
        lines
-quoted: Y"text
+quoted: "text
   	lines"
 block: |
   R"(text
@@ -1057,7 +1057,7 @@ block: |
           ))
         (of_string_exn {|
 Folding:
-  Y"Empty line
+  "Empty line
    	
   as a line feed"
 Chomping:
@@ -1091,7 +1091,7 @@ Chomping:
   ; "6.8" >:: (fun ctxt ->
       assert_equal ~printer
         (`String (" foo\nbar\nbaz "))
-        (of_string_exn {|Y"
+        (of_string_exn {|"
   foo 
  
   	 bar
@@ -1146,7 +1146,7 @@ let flow_styles = "flow styles" >::: [
   ; "7.5" >:: (fun ctxt ->
       assert_equal ~printer
         (`String ("folded to a space,\nto a line feed, or \t \tnon-content"))
-        (of_string_exn {|Y"folded 
+        (of_string_exn {|"folded 
 to a space,	
  
 to a line feed, or 	\
@@ -1155,7 +1155,7 @@ to a line feed, or 	\
   ; "7.6" >:: (fun ctxt ->
       assert_equal ~printer
         (`String (" 1st non-empty\n2nd non-empty 3rd non-empty "))
-        (of_string_exn {|Y" 1st non-empty
+        (of_string_exn {|" 1st non-empty
 
  2nd non-empty 
 	3rd non-empty "|})
@@ -1163,7 +1163,7 @@ to a line feed, or 	\
   ; "7.7" >:: (fun ctxt ->
       assert_equal ~printer
         (`String ("here's to \"quotes\""))
-        (of_string_exn {| Y'here''s to "quotes"'|})
+        (of_string_exn {| 'here''s to "quotes"'|})
       )
   ; "7.8" >:: (fun ctxt ->
       assert_equal ~printer
@@ -1171,15 +1171,15 @@ to a line feed, or 	\
             [("implicit block key",
               `A ([`O ([("implicit flow key", `String ("value"))])]))]
           ))
-        (of_string_exn {|Y'implicit block key' : [
-  { Y'implicit flow key' : value }
+        (of_string_exn {|'implicit block key' : [
+  { 'implicit flow key' : value }
  ]|})
       )
   ; "7.9" >:: (fun ctxt ->
       assert_equal ~printer
         (`String (" 1st non-empty\n2nd non-empty 3rd non-empty "))
         (of_string_exn {|
-Y' 1st non-empty
+' 1st non-empty
 
  2nd non-empty 
 	3rd non-empty '|})
@@ -1225,7 +1225,7 @@ implicit block key : [
       assert_equal ~printer
         (`String ("1st non-empty\n2nd non-empty 3rd non-empty"))
         (of_string_exn {|
- Y"1st non-empty
+ "1st non-empty
 
    2nd non-empty 
    3rd non-empty"|})
@@ -1247,10 +1247,10 @@ implicit block key : [
              `O ([("single", `String ("pair"))])]
           ))
         (of_string_exn {|[
-Y"double
- quoted", Y'single
+"double
+ quoted", 'single
            quoted',
-Y'plain
+'plain
  text', [ nested ],
 { single: pair }
 ]|})
@@ -1301,7 +1301,7 @@ null: omitted key
       assert_equal ~printer
         ( `A ([`O ([("foo bar", `String ("baz"))])]))
         (of_string_exn {|[
-{ Y'foo
+{ 'foo
  bar' : baz }
 ]|})
       )
@@ -1314,7 +1314,7 @@ null: omitted key
         (of_string_exn {|- [ a, b ]
 - { a: b }
 - "a"
-- Y'b'
+- 'b'
 - c|})
       )
   ]
@@ -1706,7 +1706,7 @@ R"(%!PS-Adobe-2.0
       assert_equal ~printer:docs_printer
         [`O ([("matches %", `Float (20.))]); `Null]
         (docs_of_string_exn {|---
-{ Y'matches
+{ 'matches
 %' : 20 }
 ...
 ---
@@ -1888,7 +1888,7 @@ Not a null: ""
 Booleans: [ true, True, false, FALSE ]
 Integers: [ 0, 0o7, 0x3A, -19 ]
 Floats: [ 0., -0.0, .5, 12e03, -2E+05 ]
-Also floats: [ .inf, Y'-.Inf', .NaN ]|})
+Also floats: [ .inf, '-.Inf', .NaN ]|})
       )
   ]
 

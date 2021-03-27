@@ -4,25 +4,25 @@
 
 --- in-yaml(<)
     ---
-    a: Y'
+    a: '
       '
-    b: Y'<SPC><SPC>
+    b: '<SPC><SPC>
       '
-    c: Y"
+    c: "
       "
-    d: Y"<SPC><SPC>
+    d: "<SPC><SPC>
       "
-    e: Y'
+    e: '
 
       '
-    f: Y"
+    f: "
 
       "
-    g: Y'
+    g: '
 
 
       '
-    h: Y"
+    h: "
 
 
       "

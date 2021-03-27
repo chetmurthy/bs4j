@@ -3,8 +3,8 @@
 --- tags: spec flow sequence mapping
 
 --- in-yaml
-Y'implicit block key' : [
-  { Y'implicit flow key' : value }
+'implicit block key' : [
+  { 'implicit flow key' : value }
  ]
 
 --- in-json

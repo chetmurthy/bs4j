@@ -3,7 +3,7 @@
 --- tags: spec scalar
 
 --- in-yaml
-single: Y'text'
+single: 'text'
 double: "text"
 
 --- in-json

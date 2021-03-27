@@ -4,7 +4,7 @@
 
 --- in-yaml(<)
     ---
-    Y'---word1
+    '---word1
     word2'
 
 --- emit-yaml(<)

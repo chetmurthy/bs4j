@@ -4,10 +4,10 @@
 
 --- in-yaml
 [
-Y"double
- quoted", Y'single
+"double
+ quoted", 'single
            quoted',
-Y"plain
+"plain
  text", [ nested ],
 { single: pair }
 ]
