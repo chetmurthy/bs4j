@@ -3,8 +3,8 @@ open OUnitTest
 
 let tml_dir = "/home/chet/Hack/Github/yaml/yaml-test-suite/test"
 
-let only_tags = ["scalar"]
-let exclude_tags = ["anchor"; "alias"; "explicit-key"; "tag"] @ ["error"]
+let only_tags = ["flow"]
+let exclude_tags = ["anchor"; "alias"; "explicit-key"; "tag"; "complex-key"; "empty-key"] @ ["error"]
 let skiplist = [
   ("BS4K.tml", None)
 ; ("L94M.tml", Some "``?'' used for key, unsupported syntax")
@@ -142,6 +142,23 @@ let skiplist = [
 ; ("A6F9.tml", Some "special chars in scalars require quotations")
 ; ("G4RS.tml", Some "yaml quotations")
 ; ("NB6Z.tml", Some "special chars in scalars require quotations")
+; ("QF4Y.tml", Some "flow style should be JSON, yaml quotations")
+; ("8UDB.tml", Some "yaml quotations, also multiline scalars forbidden in flow style")
+; ("5KJE.tml", Some "trailing comma in flow style")
+; ("Q88A.tml", Some "yaml quotations")
+; ("C2DT.tml", Some "empty value forbidden")
+; ("9BXH.tml", Some "empty value forbidden")
+; ("UDR7.tml", Some "trailing comma in flow style")
+; ("G5U8.tml", Some "special chars in scalars require quotations")
+; ("9MMW.tml", Some "complex key unsupported")
+; ("L9U5.tml", Some "flow style should be JSON, trailing comma")
+; ("NJ66.tml", Some "yaml quotations, also multiline scalars forbidden in flow style")
+; ("5C5M.tml", Some "trailing comma in flow style")
+; ("6HB6.tml", Some "whitespace precision is best done with raw-string-literals")
+; ("7ZZ5.tml", Some "subsidiary values MUST be indented")
+; ("9SA2.tml", Some "yaml quotations")
+; ("4ABK.tml", Some "special chars in scalars require quotations, empty values, trailing comma")
+; ("8KB6.tml", Some "multi line scalars in flow keys require quotations, empty values")
 ]
 
 let select_tests ?(exclude_tags=[]) ?(only_tags=[]) l =
