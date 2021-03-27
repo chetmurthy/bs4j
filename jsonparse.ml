@@ -173,19 +173,21 @@ EXTEND
     ] ]
   ;
 
-  fc : [ [ ">" -> (True, False)
-         | "|" -> (False, False)
-         | ">-" -> (True, True)
-         | "|-" -> (False, True)
-         | -> (False, False)
-         ] ] ;
-
+  fold_chomp :
+    [ [ ">" -> (True, False)
+      | "|" -> (False, False)
+      | ">-" -> (True, True)
+      | "|-" -> (False, True)
+      | -> (False, False)
+      ] ]
+    ;
+  
   scalar_rawstring:
-    [ [ (fold, chomp) = fc ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
+    [ [ (fold, chomp) = fold_chomp ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
         (unquote_rawstring ~{fold} ~{chomp} indent s)
 
-      | (fold, chomp) = fc ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
+      | (fold, chomp) = fold_chomp ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
         (unquote_rawstring ~{fold} ~{chomp} indent s)
     ] ]
@@ -233,7 +235,7 @@ EXTEND
   ;
 
   flow_scalar:
-    [ [ (fold,chomp) = fc ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
+    [ [ (fold,chomp) = fold_chomp ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
         let indent = Ploc.first_pos l - Ploc.bol_pos l in
         `String (unquote_rawstring ~{fold=fold} ~{chomp} indent s)
 

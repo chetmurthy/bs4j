@@ -161,6 +161,12 @@ let yaml_dqstring = [%sedlex.regexp? "\"" , (Star (yaml_dqstring_char | yaml_dqs
 
 let comment = [%sedlex.regexp? '#' , Star(Compl '\n') ]
 
+let foldchomp_yamlstrings  ~fold ~chomp l =
+  let s = if fold then
+      String.concat " " l
+    else String.concat "\n" l in
+  if chomp then s else s^"\n"
+
 let unquote_jsonstring s =
   let buf = Buffer.create (String.length s) in
   let lb = Sedlexing.Latin1.from_gen (gen_of_string s) in
