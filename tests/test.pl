@@ -10,7 +10,7 @@ use YAML::PP;
   my $l = join('',@l) ;
   my @docs = $ypp->load_string($l) ;
   print "================\n" ;
-  print $ypp->dump_string(@docs),"\n" ;
-  print "================\n" ;
   print Dumper(\@docs),"\n";
+  print "================\n" ;
+  print $ypp->dump_string(@docs),"\n" ;
 }
