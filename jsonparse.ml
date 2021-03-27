@@ -141,10 +141,14 @@ EXTEND
          l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
          -> `Assoc [(string_of_scalar s,v) :: l]
 
-      | s = scalar_rawstring -> `String s
-      | s = scalar_rawstring ; ":" ; v=json ;
-         l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
-         -> `Assoc [(s,v) :: l]
+      | ((fold, chomp), s, l) = scalar_rawstring ->
+         let s = unquote_rawstring ~{fold} ~{chomp} l s in
+        `String s
+
+      | ((fold, chomp), s, l) = scalar_rawstring ; ":" ; v=json ;
+         rest = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ->
+         let s = unquote_rawstring ~{fold} ~{chomp} l s in
+         `Assoc [(s,v) :: rest]
 
       | s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (String.concat " " [s::l])
       | s = YAMLSTRING ; ":" ; v=json ;
@@ -183,11 +187,11 @@ EXTEND
     ;
   
   scalar_rawstring:
-    [ [ (fold, chomp) = fold_chomp ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
-        (unquote_rawstring ~{fold} ~{chomp} l s)
+    [ [ fc = fold_chomp ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
+        (fc, s, l)
 
-      | (fold, chomp) = fold_chomp ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
-        (unquote_rawstring ~{fold} ~{chomp} l s)
+      | fc = fold_chomp ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
+        (fc, s, l)
     ] ]
   ;
 
@@ -217,7 +221,7 @@ EXTEND
   ;
 
   scalar:
-    [ [ s = scalar_rawstring -> `String s
+    [ [ ((fold, chomp), s, l) = scalar_rawstring -> `String (unquote_rawstring ~{fold} ~{chomp} l s)
       | s = scalar_yamlstring -> `String s
       | s = scalar_other_string -> `String s
       | s = scalar_nonstring -> s
@@ -225,7 +229,7 @@ EXTEND
   ;
 
   key_scalar:
-    [ [ s = scalar_rawstring -> `String s
+    [ [ ((fold, chomp), s, l) = scalar_rawstring -> `String (unquote_rawstring ~{fold} ~{chomp} l s)
       | s = YAMLSTRING -> `String s
       | s = scalar_other_string -> `String s
       | s = scalar_nonstring -> s
