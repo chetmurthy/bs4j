@@ -177,21 +177,31 @@ EXTEND
     ] ]
   ;
 
-  fold_chomp :
+  must_fold_chomp :
     [ [ ">" -> (True, False)
       | "|" -> (False, False)
       | ">-" -> (True, True)
       | "|-" -> (False, True)
+      ] ]
+    ;
+
+  fold_chomp :
+    [ [ fc = must_fold_chomp -> fc
       | -> (False, False)
       ] ]
     ;
   
   scalar_rawstring:
-    [ [ fc = fold_chomp ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
-        (fc, s, l)
+    [ [ fc = fold_chomp ; (s,l) = scalar_rawstring0 -> (fc, s, l)
+    ] ]
+  ;
+  
+  scalar_rawstring0:
+    [ [ (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
+        (s, l)
 
-      | fc = fold_chomp ; (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
-        (fc, s, l)
+      | (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
+        (s, l)
     ] ]
   ;
 
@@ -221,7 +231,7 @@ EXTEND
   ;
 
   scalar:
-    [ [ ((fold, chomp), s, l) = scalar_rawstring -> `String (unquote_rawstring ~{fold} ~{chomp} l s)
+    [ [ (fold, chomp) = fold_chomp ; (s, l) = scalar_rawstring0 -> `String (unquote_rawstring ~{fold} ~{chomp} l s)
       | s = scalar_yamlstring -> `String s
       | s = scalar_other_string -> `String s
       | s = scalar_nonstring -> s
@@ -229,7 +239,8 @@ EXTEND
   ;
 
   key_scalar:
-    [ [ ((fold, chomp), s, l) = scalar_rawstring -> `String (unquote_rawstring ~{fold} ~{chomp} l s)
+    [ [ (fold, chomp) = must_fold_chomp ; (s, l) = scalar_rawstring0 -> `String (unquote_rawstring ~{fold} ~{chomp} l s)
+      | (s, l) = scalar_rawstring0 -> `String (unquote_rawstring ~{fold=False} ~{chomp=False} l s)
       | s = YAMLSTRING -> `String s
       | s = scalar_other_string -> `String s
       | s = scalar_nonstring -> s
