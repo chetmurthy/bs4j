@@ -8,8 +8,7 @@ Folding:
    <TAB>
   as a line feed"
 Chomping: |
-  R"(Clipped empty lines
-     )"
+  Clipped empty lines
 <SPC>
 
 --- in-json

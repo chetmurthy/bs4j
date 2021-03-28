@@ -4,9 +4,9 @@
 
 --- in-yaml(<+)
     --- >
-     R"(folded
-        text
-        )"
+     folded
+     text
+
 
 
 --- in-json

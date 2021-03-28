@@ -6,9 +6,8 @@
 - plain
 - "double quoted"
 - 'single quoted'
-- 
-  R"(block
-     )"
+- >
+  block
 - plain again
 
 --- in-json

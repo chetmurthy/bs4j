@@ -5,13 +5,13 @@
 --- in-yaml
 name: Mark McGwire
 accomplishment: >
-  R"(Mark set a major league
-     home run record in 1998.
-     )"
-stats:
-  R"(65 Home Runs
-     0.278 Batting Average
-     )"
+  Mark set a major league
+  home run record in 1998.
+
+stats: |
+  65 Home Runs
+  0.278 Batting Average
+
 
 --- in-json
 {

@@ -3,14 +3,14 @@
 --- tags: spec literal folded scalar
 
 --- in-yaml
-literal:
-  R"(some
-     text
-     )"
+literal: |
+  some
+  text
+
 folded: >
-  R"(some
-     text
-     )"
+  some
+  text
+
 
 --- in-json
 {

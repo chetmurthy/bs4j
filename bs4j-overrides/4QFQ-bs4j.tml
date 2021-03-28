@@ -3,9 +3,9 @@
 --- tags: spec literal folded scalar libyaml-err 1.3-mod whitespace
 
 --- in-yaml
--
- R"(detected
-    )"
+- |
+ detected
+
 -
  R"(
     
@@ -14,9 +14,8 @@
 -
  R"( explicit
     )"
-- 
- R"(detected
-    )"
+- >
+ detected
 
 --- in-json
 [

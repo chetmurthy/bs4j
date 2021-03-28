@@ -3,14 +3,13 @@
 --- tags: spec literal scalar
 
 --- in-yaml
-strip:
+strip: |-
   text
-clip:
-  R"(text
-     )"
-keep: 
-  R"(text
-     )"
+clip: |
+  text
+keep: |
+  text
+
 
 --- in-json
 {
