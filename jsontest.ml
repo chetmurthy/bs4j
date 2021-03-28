@@ -405,6 +405,14 @@ a:
  ["a", "b",]
 |})
       )
+  ; "flow-3" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`O ([("a", `A ([`A ([`String ("a"); `String ("b")])]))]))
+          (of_string_exn {|
+a:
+ [["a", "b",],]
+|})
+      )
   ; "indents" >:: (fun ctxt ->
         assert_equal ~printer
           (`O ([("a", `O ([("b", `String ("c"))]))]))

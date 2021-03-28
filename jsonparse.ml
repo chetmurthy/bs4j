@@ -132,7 +132,7 @@ EXTEND
   flow_json:
     [ [ s = flow_scalar -> s
 
-      | "[" ; l = LIST0 flow_json SEP "," ; "]" -> `List l
+      | "[" ; l = flow_json_comma_list ; "]" -> `List l
       | "{" ; l = LIST0 [ s = flow_scalar ; ":" ; v=flow_json -> (string_of_scalar s,v) ] SEP "," ; "}" -> `Assoc l
     ] ]
   ;
