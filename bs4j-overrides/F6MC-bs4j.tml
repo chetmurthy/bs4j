@@ -4,10 +4,9 @@
 
 --- in-yaml(<)
     ---
-    a: 
+    a: |+
      R"( more indented
-        regular
-        )"
+        regular)"
     b: 
      R"(
 

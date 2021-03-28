@@ -3,9 +3,9 @@
 --- tags: spec literal folded scalar whitespace libyaml-err upto-1.2
 
 --- in-yaml
-- 
- R"(detected
-    )"
+- |+
+ detected
+
 - 
  R"(
 

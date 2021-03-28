@@ -7,10 +7,9 @@
    # neither content nor indentation.
 <SPC><SPC><SPC><SPC>
 Not indented:
- By one space: |
+ By one space: |+
     R"(By four
-         spaces
-       )"
+         spaces)"
  Flow style: [    # Leading spaces
    By two,        # in flow style
   Also by two,    # are neither

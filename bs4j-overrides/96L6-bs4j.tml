@@ -3,11 +3,10 @@
 --- tags: spec folded scalar
 
 --- in-yaml(<)
-    --- >
+    --- >+
       R"(Mark McGwire's
          year was crippled
-         by a knee injury.
-         )"
+         by a knee injury.)"
 
 --- in-json
 "Mark McGwire's year was crippled by a knee injury.\n"

@@ -4,9 +4,8 @@
 
 --- in-yaml(<)
     %BS4J-1.0
-    ---
-    R"(%!PS-Adobe-2.0
-       )"
+    --- |+
+    R"(%!PS-Adobe-2.0)"
     ...
 # see also https://github.com/yaml/yaml-test-suite/issues/34
     ---

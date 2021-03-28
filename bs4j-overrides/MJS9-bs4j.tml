@@ -3,15 +3,14 @@
 --- tags: folded spec scalar whitespace 1.3-err
 
 --- in-yaml
->
+>+
   R"(foo<SPC>
      
 
      <TAB> bar
 
 
-     baz
-     )"
+     baz)"
 
 --- in-json
 "foo \n\n\t bar\n\nbaz\n"

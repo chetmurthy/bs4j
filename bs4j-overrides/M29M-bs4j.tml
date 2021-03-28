@@ -3,12 +3,11 @@
 --- tags: literal scalar whitespace
 
 --- in-yaml
-a: 
+a: |+
  R"(ab
     
     cd
-    ef
-    )"
+    ef)"
 
 --- in-json
 {

@@ -3,11 +3,10 @@
 --- tags: comment folded scalar
 
 --- in-yaml(<)
-    --- >
+    --- >+
     R"(line1
        # no comment
-       line3
-       )"
+       line3)"
 
 --- in-json
 "line1 # no comment line3\n"

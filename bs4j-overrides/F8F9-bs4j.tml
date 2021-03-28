@@ -11,9 +11,8 @@ strip:
  # Clip
   # comments:
 
-clip:
-  R"(# text
-     )"
+clip: |+
+  R"(# text)"
 <SPC>
  # Keep
   # comments:

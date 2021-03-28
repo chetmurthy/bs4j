@@ -3,7 +3,7 @@
 --- tags: spec folded scalar comment 1.3-err
 
 --- in-yaml(<)
-    >
+    >+
     R"(
        folded
        line
@@ -16,8 +16,7 @@
          * lines
 
        last
-       line
-       )"
+       line)"
     # Comment
 
 --- in-json

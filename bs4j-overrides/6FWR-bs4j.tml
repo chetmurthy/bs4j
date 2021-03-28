@@ -3,11 +3,10 @@
 --- tags: literal scalar whitespace
 
 --- in-yaml(<)
-    --- 
+    --- |+
      R"(ab
         
-        <SPC>
-        )"
+        <SPC>)"
     ...
 
 --- in-json

@@ -3,10 +3,9 @@
 --- tags: spec literal scalar whitespace 1.3-err
 
 --- in-yaml(+)
-
+|+
  R"(literal
-    <TAB>text
-    )"
+    <TAB>text)"
 
 --- in-json
 "literal\n\ttext\n"

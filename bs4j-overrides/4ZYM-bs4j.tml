@@ -7,10 +7,9 @@ plain: text
        lines
 quoted: "text
   <TAB>lines"
-block: |
+block: |+
   R"(text
-      <TAB>lines
-     )"
+      <TAB>lines)"
 --- in-json
 {
   "plain": "text lines",

@@ -23,9 +23,8 @@
     Stack:
       - file: TopClass.py
         line: 23
-        code: |
-          R"(x = MoreObject("345\n")
-             )"
+        code: |+
+          R"(x = MoreObject("345\n"))"
       - file: MoreClass.py
         line: 58
         code: |
