@@ -301,3 +301,13 @@ value parse_docs_eoi = Grammar.Entry.parse docs_eoi ;
 value parse_string pf s =
   pf (Stream.of_string s)
 ;
+
+value parse_channel pf ic =
+  pf (Stream.of_channel ic)
+;
+
+value parse_file pf fname =
+  let ic = open_in fname in
+  let rv = pf (Stream.of_channel ic) in 
+  do { close_in ic ; rv }
+;
