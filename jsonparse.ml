@@ -91,9 +91,11 @@ value lexer = {Plexing.tok_func = lexer;
  Plexing.tok_comm = None} ;
 
 value g = Grammar.gcreate lexer;
+value (json : Grammar.Entry.e json) = Grammar.Entry.create g "json";
+value (json_eoi : Grammar.Entry.e json) = Grammar.Entry.create g "json_eoi";
+value (json_stream : Grammar.Entry.e (list json)) = Grammar.Entry.create g "json_stream";
+value (json_stream_eoi : Grammar.Entry.e (list json)) = Grammar.Entry.create g "json_stream_eoi";
 value (block_json : Grammar.Entry.e json) = Grammar.Entry.create g "block_json";
-value (scalar : Grammar.Entry.e json) = Grammar.Entry.create g "scalar";
-value (flow_scalar : Grammar.Entry.e json) = Grammar.Entry.create g "flow_scalar";
 value block_json_eoi = Grammar.Entry.create g "block_json_eoi";
 value (doc : Grammar.Entry.e json) = Grammar.Entry.create g "doc";
 value (doc_eoi : Grammar.Entry.e json) = Grammar.Entry.create g "doc_eoi";
@@ -116,12 +118,13 @@ value string_of_scalar = fun [
 
 EXTEND
   GLOBAL:
+    json json_eoi
+    json_stream json_stream_eoi
     flow_json flow_json_eoi
     flow_json_stream flow_json_stream_eoi
     block_json block_json_eoi
     doc doc_eoi
     docs docs_eoi
-    flow_scalar
     ;
   doc: [ [ v=block_json -> v
          | "---" ; v=block_json -> v
@@ -309,7 +312,35 @@ EXTEND
     [ [ l = LIST0 flow_json -> l ] ]
     ;
 
+  json:
+    [ [ s = scalar -> s
+
+      | "[" ; l = LIST0 json SEP "," ; "]" -> `List l
+      | "{" ; l = LIST0 [ s = scalar ; ":" ; v=json -> (string_of_scalar s,v) ] SEP "," ; "}" -> `Assoc l
+    ] ]
+  ;
+
+  scalar:
+    [ [ s = YAMLDQSTRING -> `String (unquote_jsonstring ~{prefixed=False} s)
+      | n = DECIMAL -> `Float (if n = ".NaN" then nan
+                               else if n = ".inf" then infinity
+                               else if n = "-.inf" then neg_infinity
+                               else float_of_string n)
+      | n = HEXADECIMAL -> `Float (float_of_int (int_of_string n))
+      | n = OCTAL -> `Float (float_of_int (int_of_string n))
+      | "null" -> `Null
+      | "true" -> `Bool True
+      | "false" -> `Bool False
+    ] ]
+  ;
+
+  json_stream:
+    [ [ l = LIST0 json -> l ] ]
+    ;
+
   block_json_eoi : [ [ l = block_json ; EOI -> l ] ] ;
+  json_eoi : [ [ l = json ; EOI -> l ] ] ;
+  json_stream_eoi : [ [ l = json_stream ; EOI -> l ] ] ;
   flow_json_eoi : [ [ l = flow_json ; EOI -> l ] ] ;
   flow_json_stream_eoi : [ [ l = flow_json_stream ; EOI -> l ] ] ;
   doc_eoi : [ [ v = OPT BS4J ; l = doc ; EOI -> l ] ] ;
@@ -317,10 +348,15 @@ EXTEND
 END;
 
 value parse_block_json = Grammar.Entry.parse block_json ;
+value parse_block_json_eoi = Grammar.Entry.parse block_json_eoi ;
+value parse_json = Grammar.Entry.parse json ;
+value parse_json_eoi = Grammar.Entry.parse json_eoi ;
+value parse_json_stream = Grammar.Entry.parse json_stream ;
+value parse_json_stream_eoi = Grammar.Entry.parse json_stream_eoi ;
 value parse_flow_json = Grammar.Entry.parse flow_json ;
 value parse_flow_json_eoi = Grammar.Entry.parse flow_json_eoi ;
+value parse_flow_json_stream = Grammar.Entry.parse flow_json_stream ;
 value parse_flow_json_stream_eoi = Grammar.Entry.parse flow_json_stream_eoi ;
-value parse_block_json_eoi = Grammar.Entry.parse block_json_eoi ;
 value parse_doc = Grammar.Entry.parse doc ;
 value parse_doc_eoi = Grammar.Entry.parse doc_eoi ;
 value parse_docs = Grammar.Entry.parse docs ;

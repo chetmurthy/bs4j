@@ -12,7 +12,7 @@ let cmp = Jsontypes.equal_yaml_list
 
 let of_string_exn s =
   s
-  |> Jsonparse.(parse_string parse_flow_json_stream_eoi)
+  |> Jsonparse.(parse_string parse_json_stream_eoi)
   |> List.map Jsontypes.json2yaml
 
 let file_contents fname =
@@ -32,17 +32,22 @@ end
 let make_test fname =
   let open Tml in
   let base = Fpath.(fname |> v |> basename) in
+  let name = Fmt.(str "[ %s ]" fname) in
 
   match List.assoc base skiplist with
     msg ->
     let msg = match msg with None -> base | Some s -> s in
-    base >:: (fun ctxt ->
-        Tml.warning (Fmt.str "%s: Not handled: %s" fname msg)
-      )
+    base >::: [
+      name >:: (fun ctxt ->
+          Tml.warning (Fmt.str "%s: Not handled: %s" fname msg)
+        )
+    ]
   | exception Not_found ->
-    base >:: (fun ctxt ->
-        JSONTestsuite.exec fname
-      )
+    base >::: [
+      name >:: (fun ctxt ->
+          JSONTestsuite.exec fname
+        )
+    ]
 
 let exec1 fname =
   JSONTestsuite.exec fname

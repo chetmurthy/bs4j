@@ -172,13 +172,19 @@ let foldchomp_yamlstrings (fold, chomp, add) l =
     else String.concat "\n" l in
   if chomp then s else s^"\n"
 
-let unquote_jsonstring s =
+let unquote_jsonstring ?(prefixed=true) s =
   let buf = Buffer.create (String.length s) in
   let lb = Sedlexing.Latin1.from_gen (gen_of_string s) in
   let rec unrec0 () =
-    match%sedlex lb with
-      "J\"" -> unrec1 ()
-    | _ -> failwith "unquote_jsonstring: unexpected character"
+    if prefixed then
+      match%sedlex lb with
+        "J\"" -> unrec1 ()
+      | _ -> failwith "unquote_jsonstring: unexpected character"
+    else
+      match%sedlex lb with
+        "\"" -> unrec1 ()
+      | _ -> failwith "unquote_jsonstring(not prefixed): unexpected character"
+
   and unrec1 () =
     match%sedlex lb with
       Plus json_unescaped ->
@@ -188,7 +194,7 @@ let unquote_jsonstring s =
     | "\\", '\\' -> Buffer.add_char buf '\\' ; unrec1 ()
     | "\\", '/' -> Buffer.add_char buf '/' ; unrec1 ()
     | "\\", 'b' -> Buffer.add_char buf '\b' ; unrec1 ()
-    | "\\", 'f' -> Buffer.add_char buf '\x4c' ; unrec1 ()
+    | "\\", 'f' -> Buffer.add_char buf '\x0c' ; unrec1 ()
     | "\\", 'n' -> Buffer.add_char buf '\n' ; unrec1 ()
     | "\\", 'r' -> Buffer.add_char buf '\r' ; unrec1 ()
     | "\\", 't' -> Buffer.add_char buf '\t' ; unrec1 ()
