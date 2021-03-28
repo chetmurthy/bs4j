@@ -541,6 +541,46 @@ b
  c
 |})
       )
+  ; "yamlstring-3-fold-add" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("a b c\n"))
+          (of_string_exn {|
+>+
+ a
+ b
+ c
+|})
+      )
+  ; "yamlstring-3-literal" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("a\nb\nc\n"))
+          (of_string_exn {|
+|
+ a
+ b
+ c
+|})
+      )
+  ; "yamlstring-3-literal-chomp" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("a\nb\nc"))
+          (of_string_exn {|
+|-
+ a
+ b
+ c
+|})
+      )
+  ; "yamlstring-3-literal-add" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("a\nb\nc\n"))
+          (of_string_exn {|
+|+
+ a
+ b
+ c
+|})
+      )
   ; "yamlstring-4" >:: (fun ctxt ->
         assert_equal ~printer
           (`A[`String ("a b c")])
