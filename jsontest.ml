@@ -102,6 +102,17 @@ a:
  ["a", "b"]
 |})
       )
+  ; "flow-2'" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(YAMLSTRING "a"); COLON; (INDENT (0, 1));
+           LBRACKET; (YAMLDQSTRING "\"a\""); COMMA;
+           (YAMLDQSTRING "\"b\""); COMMA; RBRACKET; (DEDENT (0, 1));
+           EOF]
+          (tokens_of_string {|
+a:
+ ["a", "b",]
+|})
+      )
   ; "flow-3" >:: (fun ctxt ->
         assert_equal ~printer
           [LBRACE; (YAMLSTRING "hr");
@@ -384,6 +395,14 @@ c: d
           (of_string_exn {|
 a:
  ["a", "b"]
+|})
+      )
+  ; "flow-2'" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`O ([("a", `A ([`String ("a"); `String ("b")]))]))
+          (of_string_exn {|
+a:
+ ["a", "b",]
 |})
       )
   ; "indents" >:: (fun ctxt ->

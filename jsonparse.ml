@@ -179,12 +179,22 @@ EXTEND
       ] ]
     ;
 
+  flow_json_comma_list:
+    [ [
+      v = flow_json -> [v]
+    | v = flow_json ; "," -> [v]
+    | v = flow_json ; "," ; vl = flow_json_comma_list -> [v::vl]
+    ] ]
+    ;
+
+  flow_json_comma_list: [ [ l = LIST0 flow_json SEP "," -> l ] ] ;
+
   json:
     [ [ s = block_members -> s
 
       | INDENT ; v=json ; DEDENT -> v
 
-      | "[" ; l = LIST0 flow_json SEP "," ; "]" -> `List l
+      | "[" ; l = flow_json_comma_list ; "]" -> `List l
       | "{" ; l = LIST0 [ s = flow_scalar ; ":" ; v=flow_json -> (string_of_scalar s,v) ] SEP "," ; "}" -> `Assoc l
     ] ]
   ;
