@@ -161,7 +161,7 @@ let yaml_dqstring = [%sedlex.regexp? "\"" , (Star (yaml_dqstring_char | yaml_dqs
 
 let comment = [%sedlex.regexp? '#' , Star(Compl '\n') ]
 
-let foldchomp_yamlstrings  ~fold ~chomp l =
+let foldchomp_yamlstrings (fold, chomp, add) l =
   let s = if fold then
       String.concat " " l
     else String.concat "\n" l in
@@ -409,7 +409,7 @@ let compute_rawstring_indent loc s =
   let sofs = (String.index s '(') + 1 in
   indent + sofs
 
-let unquote_rawstring ~fold ~chomp loc s =
+let unquote_rawstring (fold, chomp, add) loc s =
   let indent = compute_rawstring_indent loc s in
   let sofs = (String.index s '(') + 1 in
   let eofs = (String.rindex s ')') in
@@ -440,8 +440,8 @@ type token =
   | DASH
   | DASHDASHDASH
   | DOTDOTDOT
-  | BAR | BARDASH
-  | GT | GTDASH
+  | BAR | BARDASH | BARPLUS
+  | GT | GTDASH | GTPLUS
   | PLUS
   | DECIMAL of string
   | HEXADECIMAL of string
@@ -640,8 +640,10 @@ let rec rawtoken st =
   | ":" -> (COLON,pos())
   | "|" -> (BAR,pos())
   | "|-" -> (BARDASH,pos())
+  | "|+" -> (BARPLUS,pos())
   | ">" -> (GT,pos())
   | ">-" -> (GTDASH,pos())
+  | ">+" -> (GTPLUS,pos())
   | "+" -> (PLUS,pos())
   | "," -> (COMMA,pos())
   | "-" -> (DASH,pos())
@@ -680,8 +682,8 @@ let rec jsontoken0 st =
       | (RBRACE, _) -> failwith "jsontoken: '}' found in block style"
       | (LBRACE, _) as t -> St.push_flow st ; t
       | (COLON, _) as t -> increment_indent_with st t
-      | ((GT|GTDASH), _) as t -> t
-      | ((BAR|BARDASH), _) as t -> t
+      | ((GT|GTDASH|GTPLUS), _) as t -> t
+      | ((BAR|BARDASH|BARPLUS), _) as t -> t
       | (NEWLINE, _) -> St.set_bol st true ; jsontoken0 st
       | t -> handle_indents_with st t
   end

@@ -32,8 +32,10 @@ value compatible_lexer lb =
   | DOTDOTDOT -> ("","...")
   | BAR -> ("","|")
   | BARDASH -> ("","|-")
+  | BARPLUS -> ("","|+")
   | GT -> ("",">")
   | GTDASH -> ("",">-")
+  | GTPLUS -> ("",">+")
   | PLUS -> ("","+")
   | YAMLSTRING "false" -> ("","false")
   | YAMLSTRING "true" -> ("","true")
@@ -141,30 +143,30 @@ EXTEND
          l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
          -> `Assoc [(string_of_scalar s,v) :: l]
 
-      | (fold,chomp) = must_fold_chomp ; (s,l) = scalar_rawstring0 ->
-         let s = unquote_rawstring ~{fold} ~{chomp} l s in
+      | fca = must_fold_chomp_add ; (s,l) = scalar_rawstring0 ->
+         let s = unquote_rawstring fca l s in
         `String s
 
-      | (fold, chomp) = must_fold_chomp ; (s,l) = scalar_rawstring0 ; ":" ; v=json ;
+      | fca = must_fold_chomp_add ; (s,l) = scalar_rawstring0 ; ":" ; v=json ;
          rest = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ->
-         let s = unquote_rawstring ~{fold} ~{chomp} l s in
+         let s = unquote_rawstring fca l s in
          `Assoc [(s,v) :: rest]
 
       | (s,l) = scalar_rawstring0 ->
-         let s = unquote_rawstring ~{fold=False} ~{chomp=False} l s in
+         let s = unquote_rawstring (False, False, False) l s in
         `String s
 
       | (s,l) = scalar_rawstring0 ; ":" ; v=json ;
          rest = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ->
-         let s = unquote_rawstring ~{fold=False} ~{chomp=False} l s in
+         let s = unquote_rawstring (False, False, False) l s in
          `Assoc [(s,v) :: rest]
 
-      | (fold, chomp) = must_fold_chomp ;
-        s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (foldchomp_yamlstrings ~{fold} ~{chomp} [s::l])
-      | (fold, chomp) = must_fold_chomp ;
-        INDENT ; s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] ; DEDENT -> `String (foldchomp_yamlstrings ~{fold} ~{chomp} [s::l])
+      | fca = must_fold_chomp_add ;
+        s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (foldchomp_yamlstrings fca [s::l])
+      | fca = must_fold_chomp_add ;
+        INDENT ; s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] ; DEDENT -> `String (foldchomp_yamlstrings fca [s::l])
 
-      | s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (foldchomp_yamlstrings ~{fold=True} ~{chomp=True} [s::l])
+      | s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (foldchomp_yamlstrings (True, True, False) [s::l])
 
       | s = YAMLSTRING ; ":" ; v=json ;
          l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
@@ -192,22 +194,24 @@ EXTEND
     ] ]
   ;
 
-  must_fold_chomp :
-    [ [ ">" -> (True, False)
-      | "|" -> (False, False)
-      | ">-" -> (True, True)
-      | "|-" -> (False, True)
+  must_fold_chomp_add :
+    [ [ ">" -> (True, False, False)
+      | "|" -> (False, False, False)
+      | ">-" -> (True, True, False)
+      | "|-" -> (False, True, False)
+      | ">+" -> (True, False, True)
+      | "|+" -> (False, False, True)
       ] ]
     ;
 
-  fold_chomp :
-    [ [ fc = must_fold_chomp -> fc
-      | -> (False, False)
+  fold_chomp_add :
+    [ [ fc = must_fold_chomp_add -> fc
+      | -> (False, False, False)
       ] ]
     ;
   
   scalar_rawstring:
-    [ [ fc = fold_chomp ; (s,l) = scalar_rawstring0 -> (fc, s, l)
+    [ [ fc = fold_chomp_add ; (s,l) = scalar_rawstring0 -> (fc, s, l)
     ] ]
   ;
   
@@ -241,8 +245,8 @@ EXTEND
   ;
 
   key_scalar:
-    [ [ (fold, chomp) = must_fold_chomp ; (s, l) = scalar_rawstring0 -> `String (unquote_rawstring ~{fold} ~{chomp} l s)
-      | (s, l) = scalar_rawstring0 -> `String (unquote_rawstring ~{fold=False} ~{chomp=False} l s)
+    [ [ fca = must_fold_chomp_add ; (s, l) = scalar_rawstring0 -> `String (unquote_rawstring fca l s)
+      | (s, l) = scalar_rawstring0 -> `String (unquote_rawstring (False, False, False) l s)
       | s = YAMLSTRING -> `String s
       | s = scalar_other_string -> `String s
       | s = scalar_nonstring -> s
@@ -250,8 +254,8 @@ EXTEND
   ;
 
   flow_scalar:
-    [ [ (fold,chomp) = fold_chomp ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
-        `String (unquote_rawstring ~{fold=fold} ~{chomp} l s)
+    [ [ fca = fold_chomp_add ; (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
+        `String (unquote_rawstring fca l s)
 
       | s = YAMLSTRING -> `String s
       | s = JSONSTRING -> `String (unquote_jsonstring s)
