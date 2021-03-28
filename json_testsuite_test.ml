@@ -15,17 +15,24 @@ let of_string_exn s =
   |> Jsonparse.(parse_string parse_json_stream_eoi)
   |> List.map Jsontypes.json2yaml
 
+let yojson_of_string_exn jsons =
+  List.map Jsontypes.json2yaml (Tml.list_of_stream (Yojson.Basic.stream_from_string jsons))
+
 let file_contents fname =
   fname
   |> Fpath.v
   |> Bos.OS.File.read
   |> Rresult.R.get_ok
 
-let exec fname =
+let exec ok fname =
   let jsons = file_contents fname in
+  if ok then
     assert_equal ~printer
-      (List.map Jsontypes.canon_yaml (List.map Jsontypes.json2yaml (Tml.list_of_stream (Yojson.Basic.stream_from_string jsons))))
+      (List.map Jsontypes.canon_yaml (yojson_of_string_exn jsons))
       (List.map Jsontypes.canon_yaml (of_string_exn jsons))
+  else
+    Tml.assert_raises_exn_pattern ""
+      (fun () -> List.map Jsontypes.canon_yaml (of_string_exn jsons))
 
 end
 
@@ -42,12 +49,29 @@ let make_test fname =
           Tml.warning (Fmt.str "%s: Not handled: %s" fname msg)
         )
     ]
-  | exception Not_found ->
-    base >::: [
-      name >:: (fun ctxt ->
-          JSONTestsuite.exec fname
-        )
-    ]
+  | exception Not_found -> begin
+      match String.get base 0 with
+      'y' -> 
+        base >::: [
+          name >:: (fun ctxt ->
+              JSONTestsuite.exec true fname
+            )
+        ]
+      | 'n' ->
+        base >::: [
+          name >:: (fun ctxt ->
+              JSONTestsuite.exec false fname
+            )
+        ]
+      | 'i' ->
+        base >::: [
+          name >:: (fun ctxt ->
+              JSONTestsuite.exec true fname
+            )
+        ]
+      | _ ->
+        failwith Fmt.(str "%s: unhandled case in JSONTestsuite.exec" fname)
+    end
 
 let exec1 fname =
   JSONTestsuite.exec fname

@@ -59,6 +59,7 @@ open Json_tmltest ;;
 #load "json_testsuite_test.cmo";;
 open Json_testsuite_test ;;
 #trace JSONTestsuite.of_string_exn ;;
+#trace JSONTestsuite.yojson_of_string_exn ;;
 
 
 (*
