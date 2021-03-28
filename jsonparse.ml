@@ -187,8 +187,6 @@ EXTEND
     ] ]
     ;
 
-  flow_json_comma_list: [ [ l = LIST0 flow_json SEP "," -> l ] ] ;
-
   json:
     [ [ s = block_members -> s
 
