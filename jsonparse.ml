@@ -1,3 +1,4 @@
+open Asttools ;
 open Jsontoken ;
 open Jsontypes ;
 open Pa_ppx_base.Pp_MLast ;
@@ -137,15 +138,30 @@ EXTEND
     ] ]
   ;
 
+  scalar_rawstring0_or_yamlstrings:
+    [ [ (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
+        Left(s, l)
+
+      | s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> Right [s::l]
+
+      | INDENT ; rv = scalar_rawstring0_or_yamlstrings ; DEDENT -> rv
+    ] ]
+  ;
+
   block_members:
-    [ [ s = scalar_nonstring -> s
+    [ [ fca = must_fold_chomp_add ; r_or_y = scalar_rawstring0_or_yamlstrings ->
+        match r_or_y with [
+          Left (s,l) ->
+          let s = unquote_rawstring fca l s in
+          `String s
+        | Right l ->
+          `String (foldchomp_yamlstrings fca l)
+        ]
+
+      | s = scalar_nonstring -> s
       | s = scalar_nonstring ; ":" ; v=json ;
          l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
          -> `Assoc [(string_of_scalar s,v) :: l]
-
-      | fca = must_fold_chomp_add ; (s,l) = scalar_rawstring0 ->
-         let s = unquote_rawstring fca l s in
-        `String s
 
       | (s,l) = scalar_rawstring0 ->
          let s = unquote_rawstring (False, False, False) l s in
@@ -155,11 +171,6 @@ EXTEND
          rest = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ->
          let s = unquote_rawstring (False, False, False) l s in
          `Assoc [(s,v) :: rest]
-
-      | fca = must_fold_chomp_add ;
-        s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (foldchomp_yamlstrings fca [s::l])
-      | fca = must_fold_chomp_add ;
-        INDENT ; s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] ; DEDENT -> `String (foldchomp_yamlstrings fca [s::l])
 
       | s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (foldchomp_yamlstrings (True, True, False) [s::l])
 
@@ -232,7 +243,7 @@ EXTEND
     [ [ (s,l) = [ s = RAWSTRING -> (s,loc) ] ->
         (s, l)
 
-      | (s,l) = [ INDENT ; s = RAWSTRING ; DEDENT -> (s,loc) ] ->
+      | (s,l) = [ INDENT ; (s,l) = scalar_rawstring0 ; DEDENT -> (s,l) ] ->
         (s, l)
     ] ]
   ;

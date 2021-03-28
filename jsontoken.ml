@@ -546,12 +546,12 @@ let handle_indents_with st ((tok,(spos,epos as loc)) as t) =
       List.hd new_pushback
     end
 
-let increment_indent_with st ((tok,(spos,epos as loc)) as t) =
+let increment_indent_with ?(by=1) st ((tok,(spos,epos as loc)) as t) =
   assert (st.pushback = []) ;
   match st.style_stack with
     (BLOCK m)::_ ->
-    st.style_stack <- (BLOCK (m+1))::st.style_stack ;
-    st.pushback <- [(INDENT(m,m+1), (spos, epos))] ;
+    st.style_stack <- (BLOCK (m + by))::st.style_stack ;
+    st.pushback <- [(INDENT(m,m + by), (spos, epos))] ;
     t
   | _ -> failwith "increment_indent_with: should never be called in flow style"
 
@@ -692,8 +692,10 @@ let rec jsontoken0 st =
       | (RBRACE, _) -> failwith "jsontoken: '}' found in block style"
       | (LBRACE, _) as t -> St.push_flow st ; t
       | (COLON, _) as t -> increment_indent_with st t
+
       | ((GT|GTDASH|GTPLUS), _) as t -> t
       | ((BAR|BARDASH|BARPLUS), _) as t -> t
+
       | (NEWLINE, _) -> St.set_bol st true ; jsontoken0 st
       | t -> handle_indents_with st t
   end

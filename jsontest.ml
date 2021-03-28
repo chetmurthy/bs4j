@@ -685,6 +685,74 @@ b
  c
 |})
       )
+  ; "yamlstring-5" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`A[`String ("a b c")])
+          (of_string_exn {|-
+  a
+  b
+  c
+|})
+      )
+  ; "yamlstring-5-fold" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`A ([`String ("a b c\n")]))
+          (of_string_exn {|- 
+ >
+ a
+ b
+ c
+|})
+      )
+  ; "yamlstring-5-fold-2" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`A ([`String ("a b c\n")]))
+          (of_string_exn {|- 
+ >a
+  b
+  c
+|})
+      )
+  ; "yamlstring-6" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`A[`String ("a b c")])
+          (of_string_exn {|
+-
+ a
+ b
+ c
+|})
+      )
+  ; "yamlstring-6-fold" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`A[`String ("a b c\n")])
+          (of_string_exn {|
+- >
+ a
+ b
+ c
+|})
+      )
+  ; "yamlstring-6-fold-2" >:: (fun ctxt ->
+       assert_raises_exn_pattern
+         "[scalar_rawstring0_or_yamlstrings] expected after [must_fold_chomp_add] (in [block_members])"
+          (fun () -> of_string_exn {|
+- 
+>
+a
+|})
+      )
+  ; "yamlstring-6-fold-3" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`A[`String ("a b c\n")])
+          (of_string_exn {|
+-
+> a
+  b
+  c
+|})
+      )
+
 
 
   ; "dots-1" >:: (fun ctxt ->
