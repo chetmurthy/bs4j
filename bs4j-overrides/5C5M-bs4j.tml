@@ -3,7 +3,7 @@
 --- tags: spec flow mapping
 
 --- in-yaml
-- { one : two , three: four }
+- { one : two , three: four, }
 - {five: six,seven : eight}
 
 --- in-json

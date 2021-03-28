@@ -184,6 +184,7 @@ EXTEND
       v = flow_json -> [v]
     | v = flow_json ; "," -> [v]
     | v = flow_json ; "," ; vl = flow_json_comma_list -> [v::vl]
+    | -> []
     ] ]
     ;
 
@@ -192,6 +193,7 @@ EXTEND
       s = flow_scalar ; ":" ; v=flow_json -> [(string_of_scalar s,v)]
     | s = flow_scalar ; ":" ; v=flow_json ; "," -> [(string_of_scalar s,v)]
     | s = flow_scalar ; ":" ; v=flow_json ; "," ; vl = flow_json_pair_comma_list -> [(string_of_scalar s,v)::vl]
+    | -> []
     ] ]
     ;
 

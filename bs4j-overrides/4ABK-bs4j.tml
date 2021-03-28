@@ -6,7 +6,7 @@
 {
 unquoted : "separate",
 "http://foo.com" : null,
-omitted value: null
+omitted value: null,
 }
 
 --- in-json

@@ -3,7 +3,7 @@
 --- tags: spec flow sequence mapping
 
 --- in-yaml
-sequence: [ one, two ]
+sequence: [ one, two, ]
 mapping: { sky: blue, sea: green }
 
 --- in-json

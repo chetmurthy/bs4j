@@ -3,7 +3,7 @@
 --- tags: spec flow sequence
 
 --- in-yaml
-- [ one, two ]
+- [ one, two, ]
 - [three ,four]
 
 --- in-json
