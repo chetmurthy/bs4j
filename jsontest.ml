@@ -35,8 +35,8 @@ type token = Jsontoken.token =
   | DASH
   | DASHDASHDASH
   | DOTDOTDOT
-  | BAR | BARDASH
-  | GT | GTDASH
+  | BAR | BARDASH | BARPLUS
+  | GT | GTDASH | GTPLUS
   | PLUS
   | DECIMAL of string
   | HEXADECIMAL of string
