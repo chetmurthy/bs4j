@@ -243,6 +243,24 @@ a:
 a
 |})
       )
+  ; "comment-2" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(YAMLSTRING "a");
+           EOF]
+          (tokens_of_string {|
+// foo
+a
+|})
+      )
+  ; "comment-3" >:: (fun ctxt ->
+        assert_equal ~printer
+          [(YAMLSTRING "a");
+           EOF]
+          (tokens_of_string {|
+/* foo * / ***/
+a
+|})
+      )
   ; "float-1" >:: (fun ctxt ->
         assert_equal ~printer
           [(YAMLSTRING "hr"); COLON; (INDENT (0, 1)); (INDENT (1, 5)); (DECIMAL "65");
@@ -519,6 +537,22 @@ a:
           (`String ("a"))
           (of_string_exn {|
 # foo
+a
+|})
+    )
+  ; "comment-2" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("a"))
+          (of_string_exn {|
+// foo
+a
+|})
+    )
+  ; "comment-3" >:: (fun ctxt ->
+        assert_equal ~printer
+          (`String ("a"))
+          (of_string_exn {|
+/* foo * / ***/
 a
 |})
     )

@@ -123,7 +123,7 @@ let json_escaped = [%sedlex.regexp? "\\" , ( 0x22 | 0x5C | 0x2F | 0x62 | 0x66 | 
 let json_string_char = [%sedlex.regexp? (json_unescaped | json_escaped ) ]
 let json_string = [%sedlex.regexp?  "J\"" , (Star json_string_char) , '"']
 
-let yamlscalar_char = [%sedlex.regexp? Compl (Chars "-[]{}|>:,#\\\"\r\n'") ]
+let yamlscalar_char = [%sedlex.regexp? Compl (Chars "-[]{}|>:,#/\\\"\r\n'") ]
 let yamlscalar_startchar = [%sedlex.regexp? Sub (yamlscalar_char, (linews| '.' | '!' | '&' | '*')) ]
 let yamlscalar_endchar = [%sedlex.regexp? Sub (yamlscalar_char, linews) ]
 let yamlscalar = [%sedlex.regexp?  yamlscalar_startchar, Opt (Star yamlscalar_char, yamlscalar_endchar) ]
@@ -159,7 +159,11 @@ let yaml_dqstring_linebreak_2 = [%sedlex.regexp? ("\n" , Star(' '|'\t')) ]
 let yaml_dqstring_char = [%sedlex.regexp? (yaml_basic_dqstring_char | yaml_dqstring_escaped_char ) ]
 let yaml_dqstring = [%sedlex.regexp? "\"" , (Star (yaml_dqstring_char | yaml_dqstring_linebreak_1 | Plus(yaml_dqstring_linebreak_2))), '"' ]
 
-let comment = [%sedlex.regexp? '#' , Star(Compl '\n') ]
+let perl_comment = [%sedlex.regexp? '#' , Star(Compl '\n') ]
+let cpp_comment = [%sedlex.regexp? "//" , Star(Compl '\n') ]
+let c_comment = [%sedlex.regexp? "/*" , Star(Compl '*'| "*", Compl '/'), Star '*', "*/" ]
+
+let comment = [%sedlex.regexp? perl_comment | cpp_comment | c_comment ]
 
 let foldchomp_yamlstrings (fold, chomp, add) l =
   assert (not (chomp && add)) ;
