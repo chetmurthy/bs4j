@@ -945,12 +945,11 @@ date: "2002-12-14"|})
         (of_string_exn {|---
 "not-date": "2002-04-28"
 
-picture: |
+picture: |+
  R"(R0lGODlhDAAMAIQAAP//9/X
     17unp5WZmZgAAAOfn515eXv
     Pz7Y6OjuDg4J+fn5OTk6enp
-    56enmleECcgggoBADs=
-    )"
+    56enmleECcgggoBADs=)"
 
 application specific tag: |
     The semantics of the tag
@@ -1221,10 +1220,9 @@ let basic_structures = "basic structures" >::: [
    # neither content nor indentation.
     
 Not indented:
- By one space: |
+ By one space: |+
     R"(By four
-         spaces
-       )"
+         spaces)"
  Flow style: [    # Leading spaces
    By two,        # in flow style
   Also by two,    # are neither
@@ -1293,13 +1291,12 @@ Chomping: >
   ; "6.7" >:: (fun ctxt ->
       assert_equal ~printer
         (`String ("foo \n\t bar\nbaz\n"))
-        (of_string_exn {|>
+        (of_string_exn {|>+
   R"(foo 
 
      	 bar
 
-     baz
-     )"
+     baz)"
 |})
       )
   ; "6.8" >:: (fun ctxt ->
@@ -1544,9 +1541,8 @@ let block_styles = "block styles" >::: [
 - | # Empty header
  literal
 
-- # Indentation indicator
- R"( folded
-    )"
+- |+ # Indentation indicator
+ R"( folded)"
 - # Chomping indicator
  R"(keep
 
@@ -1623,9 +1619,8 @@ clip:
  # Keep
   # comments:
 
-keep:
-  R"(# text
-     )"
+keep: |+
+  R"(# text)"
 
  # Trail
   # comments.|})
@@ -1647,10 +1642,9 @@ keep: "\n"
   ; "8.7" >:: (fun ctxt ->
       assert_equal ~printer
         (`String ("literal\n\ttext\n"))
-        (of_string_exn {|
+        (of_string_exn {||+
  R"(literal
-    	text
-    )"
+    	text)"
 
 |})
       )

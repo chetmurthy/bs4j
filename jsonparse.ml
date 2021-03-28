@@ -147,11 +147,6 @@ EXTEND
          let s = unquote_rawstring fca l s in
         `String s
 
-      | fca = must_fold_chomp_add ; (s,l) = scalar_rawstring0 ; ":" ; v=json ;
-         rest = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ->
-         let s = unquote_rawstring fca l s in
-         `Assoc [(s,v) :: rest]
-
       | (s,l) = scalar_rawstring0 ->
          let s = unquote_rawstring (False, False, False) l s in
         `String s
@@ -245,8 +240,7 @@ EXTEND
   ;
 
   key_scalar:
-    [ [ fca = must_fold_chomp_add ; (s, l) = scalar_rawstring0 -> `String (unquote_rawstring fca l s)
-      | (s, l) = scalar_rawstring0 -> `String (unquote_rawstring (False, False, False) l s)
+    [ [ (s, l) = scalar_rawstring0 -> `String (unquote_rawstring (False, False, False) l s)
       | s = YAMLSTRING -> `String s
       | s = scalar_other_string -> `String s
       | s = scalar_nonstring -> s

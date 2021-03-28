@@ -411,6 +411,7 @@ let compute_rawstring_indent loc s =
   indent + sofs
 
 let unquote_rawstring (fold, chomp, add) loc s =
+  assert (not (chomp && add)) ;
   let indent = compute_rawstring_indent loc s in
   let sofs = (String.index s '(') + 1 in
   let eofs = (String.rindex s ')') in
@@ -426,9 +427,13 @@ let unquote_rawstring (fold, chomp, add) loc s =
         l []
     else l in
 
-  if fold then
-    fold_lines l
-  else String.concat "\n" l
+  let s = if fold then
+      fold_lines l
+    else String.concat "\n" l in
+  assert (String.length s > 0) ;
+  if add then
+    if String.get s (String.length s - 1) = '\n' then s else s^"\n"
+  else s
 
 type token =
   | BS4J of string
