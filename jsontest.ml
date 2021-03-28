@@ -1952,7 +1952,7 @@ R"(
       )
   ; "8.15-busted" >:: (fun ctxt ->
       assert_raises_exn_pattern
-        "[json] expected after INDENT (in [json])"
+        "[block_json] expected after INDENT (in [block_json])"
         (fun () -> of_string_exn {|
 - # Empty
 - a

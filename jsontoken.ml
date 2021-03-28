@@ -178,7 +178,7 @@ let unquote_jsonstring s =
   let rec unrec0 () =
     match%sedlex lb with
       "J\"" -> unrec1 ()
-    | _ -> failwith "unquote_string: unexpected character"
+    | _ -> failwith "unquote_jsonstring: unexpected character"
   and unrec1 () =
     match%sedlex lb with
       Plus json_unescaped ->
@@ -200,7 +200,7 @@ let unquote_jsonstring s =
     | '"' ->
       Buffer.contents buf
 
-    | _ -> failwith "unquote_string: internal error"
+    | _ -> failwith "unquote_jsonstring: internal error"
   in unrec0 ()
 (*
 let lex_re1 lb =
@@ -219,7 +219,7 @@ let unquote_yaml_sqstring s =
   let rec unrec0 () =
     match%sedlex lb with
     | "'" -> unrec1 ()
-    | _ -> failwith "unquote_sqstring: unexpected character"
+    | _ -> failwith "unquote_yaml_sqstring: unexpected character"
   and unrec1 () =
     match%sedlex lb with
     | Sub(yaml_unescaped_sqstring_char, (linews|'\n')), Opt(Star (Sub(yaml_unescaped_sqstring_char,'\n')), Sub(yaml_unescaped_sqstring_char, (linews|'\n'))) -> 
@@ -237,7 +237,7 @@ let unquote_yaml_sqstring s =
       Buffer.add_char buf '\'' ;
       unrec1 ()
     | "'" -> Buffer.contents buf
-    | _ -> failwith "unquote_sqstring: internal error"
+    | _ -> failwith "unquote_yaml_sqstring: internal error"
 
   and unrec2 n =
     match%sedlex lb with
@@ -264,7 +264,7 @@ let unquote_yaml_dqstring s =
   let rec unrec0 () =
     match%sedlex lb with
     | "\"" -> unrec1 ()
-    | _ -> failwith "unquote_dqstring: unexpected character"
+    | _ -> failwith "unquote_yaml_dqstring: unexpected character"
   and unrec1 () =
     match%sedlex lb with
     | Star yaml_basic_dqstring_char, Sub(yaml_basic_dqstring_char, (' ' | '\t')) ->
@@ -310,7 +310,7 @@ let unquote_yaml_dqstring s =
       unrec1 ()
 
     | '"' -> Buffer.contents buf
-    | _ -> failwith "unquote_dqstring: unexpected character"
+    | _ -> failwith "unquote_yaml_dqstring: unexpected character"
 
   and unrec2 nbreaks =
     match%sedlex lb with

@@ -91,10 +91,10 @@ value lexer = {Plexing.tok_func = lexer;
  Plexing.tok_comm = None} ;
 
 value g = Grammar.gcreate lexer;
-value (json : Grammar.Entry.e json) = Grammar.Entry.create g "json";
+value (block_json : Grammar.Entry.e json) = Grammar.Entry.create g "block_json";
 value (scalar : Grammar.Entry.e json) = Grammar.Entry.create g "scalar";
 value (flow_scalar : Grammar.Entry.e json) = Grammar.Entry.create g "flow_scalar";
-value json_eoi = Grammar.Entry.create g "json_eoi";
+value block_json_eoi = Grammar.Entry.create g "block_json_eoi";
 value (doc : Grammar.Entry.e json) = Grammar.Entry.create g "doc";
 value (doc_eoi : Grammar.Entry.e json) = Grammar.Entry.create g "doc_eoi";
 value (docs : Grammar.Entry.e (list json)) = Grammar.Entry.create g "docs";
@@ -118,24 +118,24 @@ EXTEND
   GLOBAL:
     flow_json flow_json_eoi
     flow_json_stream flow_json_stream_eoi
-    json json_eoi
+    block_json block_json_eoi
     doc doc_eoi
     docs docs_eoi
     flow_scalar
     ;
-  doc: [ [ v=json -> v
-         | "---" ; v=json -> v
-         | "---" ; v=json ; "..." -> v
-         | v=json ; "..." -> v
+  doc: [ [ v=block_json -> v
+         | "---" ; v=block_json -> v
+         | "---" ; v=block_json ; "..." -> v
+         | v=block_json ; "..." -> v
     ] ]
   ;
-  delim_doc: [ [ "---" ; v=json -> v
-               | "---" ; v=json ; OPT "..." -> v
+  delim_doc: [ [ "---" ; v=block_json -> v
+               | "---" ; v=block_json ; OPT "..." -> v
 
     ] ]
   ;
   docs: [ [ l = LIST1 delim_doc -> l
-          | v=json -> [v]
+          | v=block_json -> [v]
     ] ]
   ;
 
@@ -168,33 +168,33 @@ EXTEND
         ]
 
       | s = scalar_nonstring -> s
-      | s = scalar_nonstring ; ":" ; v=json ;
-         l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
+      | s = scalar_nonstring ; ":" ; v=block_json ;
+         l = LIST0 [ s=key_scalar ; ":" ; v=block_json -> (string_of_scalar s,v) ]
          -> `Assoc [(string_of_scalar s,v) :: l]
 
       | (s,l) = scalar_rawstring0 ->
          let s = unquote_rawstring (False, False, False) l s in
         `String s
 
-      | (s,l) = scalar_rawstring0 ; ":" ; v=json ;
-         rest = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ] ->
+      | (s,l) = scalar_rawstring0 ; ":" ; v=block_json ;
+         rest = LIST0 [ s=key_scalar ; ":" ; v=block_json -> (string_of_scalar s,v) ] ->
          let s = unquote_rawstring (False, False, False) l s in
          `Assoc [(s,v) :: rest]
 
       | s = YAMLSTRING ; l = LIST0 [ s = YAMLSTRING -> s ] -> `String (foldchomp_yamlstrings (True, True, False) [s::l])
 
-      | s = YAMLSTRING ; ":" ; v=json ;
-         l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
+      | s = YAMLSTRING ; ":" ; v=block_json ;
+         l = LIST0 [ s=key_scalar ; ":" ; v=block_json -> (string_of_scalar s,v) ]
          -> `Assoc [(s,v) :: l]
 
       | s = scalar_other_string -> `String s
-      | s = scalar_other_string ; ":" ; v=json ;
-         l = LIST0 [ s=key_scalar ; ":" ; v=json -> (string_of_scalar s,v) ]
+      | s = scalar_other_string ; ":" ; v=block_json ;
+         l = LIST0 [ s=key_scalar ; ":" ; v=block_json -> (string_of_scalar s,v) ]
          -> `Assoc [(s,v) :: l]
 
 
-      | "-" ; v=json ;
-         l = LIST0 [ "-" ; v=json -> v ]
+      | "-" ; v=block_json ;
+         l = LIST0 [ "-" ; v=block_json -> v ]
          -> `List [v :: l]
       ] ]
     ;
@@ -217,10 +217,10 @@ EXTEND
     ] ]
     ;
 
-  json:
+  block_json:
     [ [ s = block_members -> s
 
-      | INDENT ; v=json ; DEDENT -> v
+      | INDENT ; v=block_json ; DEDENT -> v
 
       | "[" ; l = flow_json_comma_list ; "]" -> `List l
       | "{" ; l = flow_json_pair_comma_list ; "}" -> `Assoc l
@@ -309,18 +309,18 @@ EXTEND
     [ [ l = LIST0 flow_json -> l ] ]
     ;
 
-  json_eoi : [ [ l = json ; EOI -> l ] ] ;
+  block_json_eoi : [ [ l = block_json ; EOI -> l ] ] ;
   flow_json_eoi : [ [ l = flow_json ; EOI -> l ] ] ;
   flow_json_stream_eoi : [ [ l = flow_json_stream ; EOI -> l ] ] ;
   doc_eoi : [ [ v = OPT BS4J ; l = doc ; EOI -> l ] ] ;
   docs_eoi : [ [ v = OPT BS4J ; l = docs ; EOI -> l ] ] ;
 END;
 
-value parse_json = Grammar.Entry.parse json ;
+value parse_block_json = Grammar.Entry.parse block_json ;
 value parse_flow_json = Grammar.Entry.parse flow_json ;
 value parse_flow_json_eoi = Grammar.Entry.parse flow_json_eoi ;
 value parse_flow_json_stream_eoi = Grammar.Entry.parse flow_json_stream_eoi ;
-value parse_json_eoi = Grammar.Entry.parse json_eoi ;
+value parse_block_json_eoi = Grammar.Entry.parse block_json_eoi ;
 value parse_doc = Grammar.Entry.parse doc ;
 value parse_doc_eoi = Grammar.Entry.parse doc_eoi ;
 value parse_docs = Grammar.Entry.parse docs ;

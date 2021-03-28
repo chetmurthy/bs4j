@@ -312,12 +312,12 @@ let of_string_exn s =
   |> Jsonparse.(parse_string parse_flow_json_stream_eoi)
   |> List.map Jsontypes.json2yaml
 
-let parse_yaml t =
-  match find_yaml t "in-yaml" with
-    Some yamlp ->
-    let yamls = extract_yaml t yamlp in
-      (List.map Jsontypes.canon_yaml (of_string_exn yamls))
-  | None -> failwith (Fmt.(str "%s: no YAML found" t.filename))
+let parse_json t =
+  match find_sect t "in-json" with
+    Some jsonl ->
+    let jsons = String.concat "\n" (List.tl jsonl) in
+      (List.map Jsontypes.canon_yaml (of_string_exn jsons))
+  | None -> failwith (Fmt.(str "%s: no JSON found" t.filename))
 
 let exec t =
   match find_sect t "in-json" with
@@ -329,7 +329,5 @@ let exec t =
 
   | None ->
     warning Fmt.(str "%s: no JSON to test" t.filename)
-
-  | _ -> failwith (Fmt.(str "%s: unhandled TML syntax" t.filename))
 
 end
