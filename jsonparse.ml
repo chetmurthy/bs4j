@@ -133,7 +133,7 @@ EXTEND
     [ [ s = flow_scalar -> s
 
       | "[" ; l = flow_json_comma_list ; "]" -> `List l
-      | "{" ; l = LIST0 [ s = flow_scalar ; ":" ; v=flow_json -> (string_of_scalar s,v) ] SEP "," ; "}" -> `Assoc l
+      | "{" ; l = flow_json_pair_comma_list ; "}" -> `Assoc l
     ] ]
   ;
 
@@ -187,13 +187,21 @@ EXTEND
     ] ]
     ;
 
+  flow_json_pair_comma_list:
+    [ [
+      s = flow_scalar ; ":" ; v=flow_json -> [(string_of_scalar s,v)]
+    | s = flow_scalar ; ":" ; v=flow_json ; "," -> [(string_of_scalar s,v)]
+    | s = flow_scalar ; ":" ; v=flow_json ; "," ; vl = flow_json_pair_comma_list -> [(string_of_scalar s,v)::vl]
+    ] ]
+    ;
+
   json:
     [ [ s = block_members -> s
 
       | INDENT ; v=json ; DEDENT -> v
 
       | "[" ; l = flow_json_comma_list ; "]" -> `List l
-      | "{" ; l = LIST0 [ s = flow_scalar ; ":" ; v=flow_json -> (string_of_scalar s,v) ] SEP "," ; "}" -> `Assoc l
+      | "{" ; l = flow_json_pair_comma_list ; "}" -> `Assoc l
     ] ]
   ;
 
