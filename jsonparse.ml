@@ -92,7 +92,6 @@ value lexer = {Plexing.tok_func = lexer;
 
 value g = Grammar.gcreate lexer;
 value (json : Grammar.Entry.e json) = Grammar.Entry.create g "json";
-value (flow_json : Grammar.Entry.e json) = Grammar.Entry.create g "flow_json";
 value (scalar : Grammar.Entry.e json) = Grammar.Entry.create g "scalar";
 value (flow_scalar : Grammar.Entry.e json) = Grammar.Entry.create g "flow_scalar";
 value json_eoi = Grammar.Entry.create g "json_eoi";
@@ -100,6 +99,10 @@ value (doc : Grammar.Entry.e json) = Grammar.Entry.create g "doc";
 value (doc_eoi : Grammar.Entry.e json) = Grammar.Entry.create g "doc_eoi";
 value (docs : Grammar.Entry.e (list json)) = Grammar.Entry.create g "docs";
 value (docs_eoi : Grammar.Entry.e (list json)) = Grammar.Entry.create g "docs_eoi";
+value (flow_json : Grammar.Entry.e json) = Grammar.Entry.create g "flow_json";
+value (flow_json_eoi : Grammar.Entry.e json) = Grammar.Entry.create g "flow_json_eoi";
+value (flow_json_stream : Grammar.Entry.e (list json)) = Grammar.Entry.create g "flow_json_stream";
+value (flow_json_stream_eoi : Grammar.Entry.e (list json)) = Grammar.Entry.create g "flow_json_stream_eoi";
 
 value string_of_scalar = fun [
   `String s -> s
@@ -112,8 +115,14 @@ value string_of_scalar = fun [
 ;
 
 EXTEND
-  GLOBAL: flow_json json json_eoi flow_scalar
-          doc doc_eoi docs docs_eoi ;
+  GLOBAL:
+    flow_json flow_json_eoi
+    flow_json_stream flow_json_stream_eoi
+    json json_eoi
+    doc doc_eoi
+    docs docs_eoi
+    flow_scalar
+    ;
   doc: [ [ v=json -> v
          | "---" ; v=json -> v
          | "---" ; v=json ; "..." -> v
@@ -296,13 +305,21 @@ EXTEND
     ] ]
   ;
 
+  flow_json_stream:
+    [ [ l = LIST0 flow_json -> l ] ]
+    ;
+
   json_eoi : [ [ l = json ; EOI -> l ] ] ;
+  flow_json_eoi : [ [ l = flow_json ; EOI -> l ] ] ;
+  flow_json_stream_eoi : [ [ l = flow_json_stream ; EOI -> l ] ] ;
   doc_eoi : [ [ v = OPT BS4J ; l = doc ; EOI -> l ] ] ;
   docs_eoi : [ [ v = OPT BS4J ; l = docs ; EOI -> l ] ] ;
 END;
 
 value parse_json = Grammar.Entry.parse json ;
 value parse_flow_json = Grammar.Entry.parse flow_json ;
+value parse_flow_json_eoi = Grammar.Entry.parse flow_json_eoi ;
+value parse_flow_json_stream_eoi = Grammar.Entry.parse flow_json_stream_eoi ;
 value parse_json_eoi = Grammar.Entry.parse json_eoi ;
 value parse_doc = Grammar.Entry.parse doc ;
 value parse_doc_eoi = Grammar.Entry.parse doc_eoi ;

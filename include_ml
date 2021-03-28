@@ -46,9 +46,14 @@ open Jsontest ;;
 #load "ocamlyaml_tmltest.cmo";;
 open Ocamlyaml_tmltest ;;
 *)
+(*
 #trace Tml.BS4J.docs_of_string_exn ;;
 #load "bs4j_tmltest.cmo";;
 open Bs4j_tmltest ;;
+*)
+#trace Tml.JSON.of_string_exn ;;
+#load "json_tmltest.cmo";;
+open Json_tmltest ;;
 
 (*
 #trace indentspaces ;;

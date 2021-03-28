@@ -301,3 +301,35 @@ let exec t =
   | _ -> failwith (Fmt.(str "%s: unhandled TML syntax" t.filename))
 
 end
+
+module JSON = struct
+
+let printer x = Fmt.(str "%a" Jsontypes.pp_yaml_list x)
+let cmp = Jsontypes.equal_yaml_list
+
+let of_string_exn s =
+  s
+  |> Jsonparse.(parse_string parse_flow_json_stream_eoi)
+  |> List.map Jsontypes.json2yaml
+
+let parse_yaml t =
+  match find_yaml t "in-yaml" with
+    Some yamlp ->
+    let yamls = extract_yaml t yamlp in
+      (List.map Jsontypes.canon_yaml (of_string_exn yamls))
+  | None -> failwith (Fmt.(str "%s: no YAML found" t.filename))
+
+let exec t =
+  match find_sect t "in-json" with
+    Some jsonl ->
+    let jsons = String.concat "\n" (List.tl jsonl) in
+    assert_equal ~printer
+      (List.map Jsontypes.canon_yaml (List.map Jsontypes.json2yaml (list_of_stream (Yojson.Basic.stream_from_string jsons))))
+      (List.map Jsontypes.canon_yaml (of_string_exn jsons))
+
+  | None ->
+    warning Fmt.(str "%s: no JSON to test" t.filename)
+
+  | _ -> failwith (Fmt.(str "%s: unhandled TML syntax" t.filename))
+
+end

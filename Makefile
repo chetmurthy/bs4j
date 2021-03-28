@@ -5,7 +5,7 @@ PACKAGES=bos,fmt,camlp5.extprint,camlp5.extend,camlp5.pprintf,pcre,yaml,pa_ppx.d
 
 OBJ=jsontypes.cmo jsontoken.cmo jsonparse.cmo tml.cmo
 
-all: $(OBJ) yamltest jsontest ocamlyaml_tmltest bs4j_tmltest
+all: $(OBJ) yamltest jsontest ocamlyaml_tmltest bs4j_tmltest json_tmltest
 
 yamltest: $(OBJ) yamltest.cmo
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -linkpkg -linkall -syntax camlp5r $^ -o $@
@@ -14,6 +14,9 @@ ocamlyaml_tmltest: $(OBJ) ocamlyaml_tmltest.cmo
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -linkpkg -linkall -syntax camlp5r $^ -o $@
 
 bs4j_tmltest: $(OBJ) bs4j_tmltest.cmo
+	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -linkpkg -linkall -syntax camlp5r $^ -o $@
+
+json_tmltest: $(OBJ) json_tmltest.cmo
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -linkpkg -linkall -syntax camlp5r $^ -o $@
 
 jsontest: $(OBJ) jsontest.cmo
@@ -27,10 +30,12 @@ test:: all
 testsuite:: test
 #	./ocamlyaml_tmltest || true
 	./bs4j_tmltest || true
+	./json_tmltest || true
 
 just-testsuite:: all
 #	./ocamlyaml_tmltest || true
 	./bs4j_tmltest || true
+	./json_tmltest || true
 
 .SUFFIXES: .mll .ml .cmo .cmx
 
@@ -57,6 +62,9 @@ ocamlyaml_tmltest.cmo: ocamlyaml_tmltest.ml
 bs4j_tmltest.cmo: bs4j_tmltest.ml
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -syntax camlp5o -c $<
 
+json_tmltest.cmo: json_tmltest.ml
+	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -syntax camlp5o -c $<
+
 jsontest.cmo: jsontest.ml
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -syntax camlp5o -c $<
 
@@ -69,7 +77,10 @@ clean:
 
 
 depend::
-	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5o tml.ml jsontypes.ml yamltest.ml jsontest.ml ocamlyaml_tmltest.ml bs4j_tmltest.ml > .depend.NEW || true
+	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5o \
+		tml.ml jsontypes.ml \
+		yamltest.ml jsontest.ml \
+		ocamlyaml_tmltest.ml bs4j_tmltest.ml json_tmltest.ml > .depend.NEW || true
 	$(OCAMLFIND) ocamldep $(DEBUG) -package sedlex.ppx jsontoken.ml >> .depend.NEW || true
 	$(OCAMLFIND) ocamldep $(DEBUG) -package $(PACKAGES) -syntax camlp5r jsonparse.ml >> .depend.NEW
 	mv .depend.NEW .depend
