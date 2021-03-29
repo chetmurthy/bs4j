@@ -108,6 +108,7 @@ let frac = [%sedlex.regexp? '.' , (Star digit)]
 let ne_frac = [%sedlex.regexp? '.' , (Plus digit)]
 let exp = [%sedlex.regexp? ('e' | 'E') , (Opt ('-' | '+')) , (Plus digit)]
 let decimal_float_number = [%sedlex.regexp? (Opt '-') , ((int , (Opt frac) , (Opt exp)) | (ne_frac, Opt exp))]
+let json_number = [%sedlex.regexp? (Opt '-') , int, Opt ne_frac, Opt exp]
 let decimal_float_not_numbers = [%sedlex.regexp? ".inf" | "-.inf" | ".NaN"]
 let decimal_float = [%sedlex.regexp? decimal_float_number | decimal_float_not_numbers]
 let hexadecimal_integer = [%sedlex.regexp?  (Opt '-') , "0x" , Plus(hexdigit)]
@@ -165,12 +166,34 @@ let c_comment = [%sedlex.regexp? "/*" , Star(Compl '*'| "*", Compl '/'), Star '*
 
 let comment = [%sedlex.regexp? perl_comment | cpp_comment | c_comment ]
 
+let convert_float ?(json=false) s =
+  let lb = Sedlexing.Latin1.from_gen (gen_of_string s) in
+  match%sedlex lb with
+    json_number, eof ->
+    float_of_string (Sedlexing.Latin1.lexeme lb)
+  | _ ->
+    if json then
+      failwith "convert_float: not a JSON float"
+    else
+      float_of_string s
+
 let foldchomp_yamlstrings (fold, chomp, add) l =
   assert (not (chomp && add)) ;
   let s = if fold then
       String.concat " " l
     else String.concat "\n" l in
   if chomp then s else s^"\n"
+
+let is_high_surrogate i =
+  0xD800 <= i && i <= 0xDBFF
+
+let is_low_surrogate i =
+  0xDC00 <= i && i <= 0xDFFF
+
+let code_of_surrogate_pair i j =
+  let high10 = i - 0xD800 in
+  let low10 = j - 0xDC00 in
+  0x10000 + ((high10 lsl 10) lor low10)
 
 let unquote_jsonstring ?(prefixed=true) s =
   let buf = Buffer.create (String.length s) in
@@ -201,12 +224,36 @@ let unquote_jsonstring ?(prefixed=true) s =
     | "\\", 'u', Rep(hexdigit,4) ->
       let s = Sedlexing.Latin1.sub_lexeme lb 2 4 in
       let n = int_of_string ("0x"^s) in
-      Buffer.add_utf_8_uchar buf (Uchar.of_int n) ; unrec1 ()
+      if Uchar.is_valid n then begin
+        Buffer.add_utf_8_uchar buf (Uchar.of_int n) ;
+        unrec1 ()
+      end
+      else if is_high_surrogate n then
+          unrec2 n
+      else begin
+        Buffer.add_utf_8_uchar buf (Uchar.unsafe_of_int n) ;
+        unrec1 ()
+      end
 
     | '"' ->
       Buffer.contents buf
 
     | _ -> failwith "unquote_jsonstring: internal error"
+
+and unrec2 hi =
+  match%sedlex lb with
+  | "\\", 'u', Rep(hexdigit,4) ->
+    let s = Sedlexing.Latin1.sub_lexeme lb 2 4 in
+    let lo = int_of_string ("0x"^s) in
+    if is_low_surrogate lo then
+      let u = code_of_surrogate_pair hi lo in
+      Buffer.add_utf_8_uchar buf (Uchar.of_int u) ;
+      unrec1 ()
+    else failwith Fmt.(str "unquote_jsonstring: invalid unicode surrogates: (0x%04x, 0x%04x)" hi lo)
+
+  | _ ->
+    failwith Fmt.(str "unquote_jsonstring: missing low surrogate after hi: 0x%04x" hi)
+
   in unrec0 ()
 (*
 let lex_re1 lb =

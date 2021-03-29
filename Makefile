@@ -56,7 +56,7 @@ jsonparse.cmo: jsonparse.ml
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),sedlex,oUnit -syntax camlp5r -c $<
 
 jsontoken.cmo: jsontoken.ml
-	$(OCAMLFIND) ocamlc $(DEBUG) -package camlp5.gramlib,sedlex.ppx -c $<
+	$(OCAMLFIND) ocamlc $(DEBUG) -package fmt,camlp5.gramlib,sedlex.ppx -c $<
 
 yamltest.cmo: yamltest.ml
 	$(OCAMLFIND) ocamlc $(DEBUG) -package $(PACKAGES),oUnit -syntax camlp5o -c $<

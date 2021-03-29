@@ -271,7 +271,7 @@ EXTEND
     [ [ n = DECIMAL -> `Float (if n = ".NaN" then nan
                                else if n = ".inf" then infinity
                                else if n = "-.inf" then neg_infinity
-                               else float_of_string n)
+                               else convert_float n)
       | n = HEXADECIMAL -> `Float (float_of_int (int_of_string n))
       | n = OCTAL -> `Float (float_of_int (int_of_string n))
       | "null" -> `Null
@@ -299,7 +299,7 @@ EXTEND
       | n = DECIMAL -> `Float (if n = ".NaN" then nan
                                else if n = ".inf" then infinity
                                else if n = "-.inf" then neg_infinity
-                               else float_of_string n)
+                               else convert_float n)
       | n = HEXADECIMAL -> `Float (float_of_int (int_of_string n))
       | n = OCTAL -> `Float (float_of_int (int_of_string n))
       | "null" -> `Null
@@ -316,7 +316,12 @@ EXTEND
     [ [ s = scalar -> s
 
       | "[" ; l = LIST0 json SEP "," ; "]" -> `List l
-      | "{" ; l = LIST0 [ s = scalar ; ":" ; v=json -> (string_of_scalar s,v) ] SEP "," ; "}" -> `Assoc l
+      | "{" ; l = LIST0 [ s = json_string ; ":" ; v=json -> (s,v) ] SEP "," ; "}" -> `Assoc l
+    ] ]
+  ;
+
+  json_string:
+    [ [ s = YAMLDQSTRING -> unquote_jsonstring ~{prefixed=False} s
     ] ]
   ;
 
@@ -325,9 +330,9 @@ EXTEND
       | n = DECIMAL -> `Float (if n = ".NaN" then nan
                                else if n = ".inf" then infinity
                                else if n = "-.inf" then neg_infinity
-                               else float_of_string n)
-      | n = HEXADECIMAL -> `Float (float_of_int (int_of_string n))
-      | n = OCTAL -> `Float (float_of_int (int_of_string n))
+                               else convert_float ~{json=True} n)
+      | n = HEXADECIMAL -> Ploc.raise loc (Failure Fmt.(str "BS4J(JSON mode): hexadecimals are not permitted %a" Dump.string n))
+      | n = OCTAL -> Ploc.raise loc (Failure Fmt.(str "BS4J(JSON mode): octals are not permitted %a" Dump.string n))
       | "null" -> `Null
       | "true" -> `Bool True
       | "false" -> `Bool False

@@ -56,11 +56,17 @@ open Bs4j_tmltest ;;
 #load "json_tmltest.cmo";;
 open Json_tmltest ;;
 *)
+
 #load "json_testsuite_test.cmo";;
 open Json_testsuite_test ;;
 #trace JSONTestsuite.of_string_exn ;;
 #trace JSONTestsuite.yojson_of_string_exn ;;
-
+#trace is_high_surrogate ;;
+#trace is_low_surrogate ;;
+#trace code_of_surrogate_pair ;;
+#trace Yojson.code_of_surrogate_pair ;;
+#trace Yojson.utf8_of_code ;;
+#trace Yojson.Raw.finish_surrogate_pair ;;
 
 (*
 #trace indentspaces ;;
