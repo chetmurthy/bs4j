@@ -4,7 +4,7 @@ open OUnitTest
 let tml_dir = "/home/chet/Hack/Github/yaml/yaml-test-suite/test"
 
 let only_tags = []
-let exclude_tags = ["anchor"; "alias"; "explicit-key"; "tag"; "complex-key"; "empty-key"] @ ["error"]
+let exclude_tags = ["anchor"; "alias"; "explicit-key"; "tag"; "complex-key"; "empty-key"]
 
 let skiplist = [
   ("5U3A.tml", Some "supported block syntax in BS4J")
@@ -110,6 +110,23 @@ let skiplist = [
 ; ("AZW3.tml", Some "special chars in scalars require quotations, empty values")
 ; ("7Z25.tml", Some "trailing text after document")
 ; ("98YD.tml", Some "empty document with comments")
+; ("QB6E.tml", Some "multiline quoted-strings don't need to obey indentation rules: continuation lines can have arbitray indent ")
+; ("RXY3.tml", Some  "multiline quoted-strings don't need to obey indentation rules: continuation lines can have arbitray indent ")
+; ("5TRB.tml", Some  "multiline quoted-strings don't need to obey indentation rules: continuation lines can have arbitrary indent")
+; ("SU5Z.tml", Some "comments are allowed anywhere")
+; ("BF9H.tml", Some "comments are allowed anywhere")
+; ("X4QW.tml", Some "comments are allowed anywhere")
+; ("W9L4.tml", Some "indentation in empty lines is superfluous outside of quotes")
+; ("EB22.tml", Some "with multiple documents, only headers are mandatory")
+; ("9JBA.tml", Some "comments are allowed anywhere")
+; ("9KBC.tml", Some "value can start on same line as header")
+; ("ZL4Z.tml", Some "mappings, arrays can nest in arbitrary order")
+; ("CVW2.tml", Some "comments are allowed anywhere")
+; ("ZCZ6.tml", Some "mappings, arrays can nest in arbitrary order")
+; ("5LLU.tml", Some "indentation in empty lines is superfluous outside of quotes")
+; ("D49Q.tml", Some  "multiline quoted-strings are allowed anywhere quoted strings are")
+; ("7LBH.tml", Some  "multiline quoted-strings are allowed anywhere quoted strings are")
+; ("BS4K.tml", Some "comments are allowed anywhere")
 ]
 
 let select_tests ?(exclude_tags=[]) ?(only_tags=[]) l =

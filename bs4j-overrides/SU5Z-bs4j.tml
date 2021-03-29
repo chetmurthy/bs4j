@@ -1,6 +1,6 @@
 === Comment without whitespace after doublequoted scalar
 --- from: @perlpunk
---- tags: comment error double whitespace
+--- tags: comment double whitespace
 
 --- in-yaml
 key: "value"# invalid comment

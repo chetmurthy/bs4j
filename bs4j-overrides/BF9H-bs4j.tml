@@ -1,6 +1,6 @@
 === Trailing comment in multiline plain scalar
 --- from: @perlpunk
---- tags: comment error scalar
+--- tags: comment scalar
 
 --- in-yaml(<)
     ---

@@ -1,6 +1,6 @@
 === Missing document-end marker before directive
 --- from: @perlpunk
---- tags: error directive footer
+--- tags: directive footer
 
 --- in-yaml(<)
     ---
